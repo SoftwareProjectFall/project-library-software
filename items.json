@@ -1,0 +1,42 @@
+[
+  {
+    "isbn": "101",
+    "title": "game of thrones",
+    "author": "chris",
+    "borrowed": false,
+    "borrowDate": "2025-11-24",
+    "dueDate": "2025-12-22",
+    "fineStrategy": {},
+    "fineType": "BOOK"
+  },
+  {
+    "isbn": "102",
+    "title": "dexter",
+    "author": "hamza",
+    "borrowed": true,
+    "borrowedByUserId": "2",
+    "borrowDate": "2025-11-24",
+    "dueDate": "2025-12-01",
+    "fineStrategy": {},
+    "fineType": "DVD"
+  },
+  {
+    "isbn": "103",
+    "title": "peacemaker",
+    "author": "mahmoud",
+    "borrowed": true,
+    "borrowedByUserId": "2",
+    "borrowDate": "2025-11-24",
+    "dueDate": "2025-12-22",
+    "fineStrategy": {},
+    "fineType": "JOURNAL"
+  },
+  {
+    "isbn": "105",
+    "title": "better call saul",
+    "author": "saleh",
+    "borrowed": false,
+    "fineStrategy": {},
+    "fineType": "JOURNAL"
+  }
+]
