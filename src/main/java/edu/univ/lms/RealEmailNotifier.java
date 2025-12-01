@@ -12,10 +12,10 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 
 /**
- * Real email notifier using Gmail SMTP.
- * Requires:
- *  - Gmail address
- *  - App Password (NOT regular password)
+ Real email notifier using Gmail SMTP.
+  Requires:
+   - Gmail address
+ - App Password (NOT regular password)
  */
 public class RealEmailNotifier implements Observer {
 

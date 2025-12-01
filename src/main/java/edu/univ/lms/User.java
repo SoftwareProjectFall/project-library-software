@@ -1,14 +1,12 @@
 package edu.univ.lms;
 
 /**
- * Represents a user of the library system.
- * Handles login, logout, fine payments, and authentication.
+  Represents a user of the library system.
+ Handles login, logout, fine payments, and authentication.
  */
 public class User {
 
-    // ---------------------------------------------------------
     // Fields
-    // ---------------------------------------------------------
     private String userId;        // Unique ID
     private String name;          // Full name
     private String username;      // Login username
@@ -18,9 +16,7 @@ public class User {
     private double fineBalance = 0.0;  // unpaid fines
     private String email;         // email for notifications
 
-    // ---------------------------------------------------------
     // Constructors
-    // ---------------------------------------------------------
 
     // Main constructor
     public User(String userId, String name, String username, String password, boolean isAdmin, String email) {
@@ -35,9 +31,7 @@ public class User {
     // Needed for JSON serialization/deserialization
     public User() {}
 
-    // ---------------------------------------------------------
     // Getters & Setters
-    // ---------------------------------------------------------
     public String getUserId() {
         return userId;
     }
@@ -84,9 +78,7 @@ public class User {
         return fineBalance;
     }
 
-    // ---------------------------------------------------------
     // Fine management
-    // ---------------------------------------------------------
 
     public void addFine(double amount) {
         if (amount > 0) {

@@ -6,9 +6,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Represents the Library system.
- * Handles user actions, admin actions, item persistence, borrowing rules,
- * overdue detection, and strategy-based fines.
+ Represents the Library system.
+ Handles user actions, admin actions, item persistence, borrowing rules,
+ overdue detection, and strategy-based fines.
  */
 public class Library {
 

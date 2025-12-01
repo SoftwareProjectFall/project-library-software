@@ -7,17 +7,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ReminderService sends notifications to users with overdue items.
- * Uses the Observer Pattern to support different types of notifiers (Email, SMS, etc.)
+  ReminderService sends notifications to users with overdue items.
+Uses the Observer Pattern to support different types of notifiers (Email, SMS, etc.)
  */
 public class ReminderService {
 
     // List of observers (email, SMS, etc.)
     private List<Observer> observers = new ArrayList<>();
 
-    // ---------------------------------------------------------
     // Observer management
-    // ---------------------------------------------------------
 
     /** Attach a new observer (e.g., EmailNotifier) */
     public void addObserver(Observer observer) {
@@ -29,9 +27,7 @@ public class ReminderService {
         observers.remove(observer);
     }
 
-    // ---------------------------------------------------------
     // Reminder logic
-    // ---------------------------------------------------------
 
     /**
      * Sends reminders to users who have overdue items.

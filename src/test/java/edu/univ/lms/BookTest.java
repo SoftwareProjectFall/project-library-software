@@ -1,64 +1,93 @@
 package edu.univ.lms;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.lang.reflect.Field;
 import java.time.LocalDate;
+
+import org.junit.jupiter.api.Test;
 
 public class BookTest {
 
-    public static void main(String[] args) {
-        System.out.println("=== BOOK TEST START ===\n");
+    @Test
+    void testBasicConstructor() {
+        Book book = new Book("123", "Clean Code", "Robert Martin");
 
-        // 1. Create a book
-        Book book = new Book("ISBN001", "Java Programming", "Author A");
-        System.out.println("Created book: " + book);
+        assertEquals("123", book.getIsbn());
+        assertEquals("Clean Code", book.getTitle());
+        assertEquals("Robert Martin", book.getAuthor());
+        assertEquals("BOOK", book.getItemType());
+        assertFalse(book.isBorrowed());
+    }
 
-        // 2. Test getters
-        System.out.println("\n--- Test Getters ---");
-        System.out.println("ISBN: " + book.getIsbn());          // ISBN001
-        System.out.println("Title: " + book.getTitle());        // Java Programming
-        System.out.println("Author: " + book.getAuthor());      // Author A
-        System.out.println("Is Borrowed: " + book.isBorrowed()); // false
-        System.out.println("Borrowed By: " + book.getBorrowedByUserId()); // null
-        System.out.println("Borrow Date: " + book.getBorrowDate()); // null
-        System.out.println("Due Date: " + book.getDueDate());       // null
+    @Test
+    void testConstructorWithStrategy() {
+        Book dvd = new Book("1", "Movie", "Dir", new DvdFine());
+        Book journal = new Book("2", "Journal", "Ed", new JournalFine());
 
-        // 3. Test setters
-        System.out.println("\n--- Test Setters ---");
-        book.setTitle("Advanced Java");
-        book.setAuthor("Author B");
-        book.setBorrowed(true);
-        book.setBorrowedByUserId("U001");
-        LocalDate borrowDate = LocalDate.of(2025, 10, 24);
-        LocalDate dueDate = borrowDate.plusDays(28);
-        book.setBorrowDate(borrowDate);
-        book.setDueDate(dueDate);
+        assertEquals("DVD", dvd.getItemType());
+        assertEquals("JOURNAL", journal.getItemType());
+    }
 
-        // 4. Check updated values
-        System.out.println("Updated Title: " + book.getTitle());    // Advanced Java
-        System.out.println("Updated Author: " + book.getAuthor());  // Author B
-        System.out.println("Is Borrowed: " + book.isBorrowed());    // true
-        System.out.println("Borrowed By: " + book.getBorrowedByUserId()); // U001
-        System.out.println("Borrow Date: " + book.getBorrowDate()); // 2025-10-24
-        System.out.println("Due Date: " + book.getDueDate());       // 2025-11-21
+    @Test
+    void testCalculateFine_WithStrategy() {
+        Book dvd = new Book("1", "Movie", "Dir", new DvdFine());
+        assertEquals(40.0, dvd.calculateFine(2));   // 20 * 2
+    }
 
-        // 5. Test toString
-        System.out.println("\n--- Test toString ---");
-        System.out.println(book);
+    @Test
+    void testCalculateFine_NoStrategy() throws Exception {
+        Book book = new Book("1", "X", "Y");
 
-        // 6. Reset borrowed status
-        book.setBorrowed(false);
-        book.setBorrowedByUserId(null);
-        book.setBorrowDate(null);
-        book.setDueDate(null);
+        Field f = Book.class.getDeclaredField("fineStrategy");
+        f.setAccessible(true);
+        f.set(book, null);
 
-        System.out.println("\nAfter resetting borrow status:");
-        System.out.println(book);
+        assertEquals(3.0, book.calculateFine(3)); // fallback = 1 per day
+    }
 
-        // 7. Edge case: set blank title/author
-        book.setTitle("");
-        book.setAuthor("");
-        System.out.println("\nAfter setting empty title/author:");
-        System.out.println(book);
+    @Test
+    void testRebuildFineStrategy() {
+        Book b = new Book();
 
-        System.out.println("\n=== BOOK TEST END ===");
+        b.setFineType("DVD");
+        b.rebuildFineStrategy();
+        assertEquals("DVD", b.getItemType());
+
+        b.setFineType("JOURNAL");
+        b.rebuildFineStrategy();
+        assertEquals("JOURNAL", b.getItemType());
+
+        b.setFineType("XYZ");
+        b.rebuildFineStrategy();
+        assertEquals("BOOK", b.getItemType());
+    }
+
+    @Test
+    void testToStringAvailableState() {
+        Book b = new Book("100", "Test Book", "Author", new BookFine());
+
+        b.setBorrowed(false);
+
+        String s = b.toString();
+
+        assertTrue(s.contains("Available"));
+        assertTrue(s.contains("ISBN='100'"));
+        assertTrue(s.contains("Title='Test Book'"));
+    }
+    
+    
+    
+    @Test
+    void testToStringBorrowedState() {
+        Book b = new Book("123", "Test", "Tester");
+        b.setBorrowed(true);
+        b.setBorrowedByUserId("U1");
+        LocalDate due = LocalDate.of(2025, 1, 10);
+        b.setDueDate(due);
+
+        String s = b.toString();
+        assertTrue(s.contains("Borrowed by UserID: U1"));
+        assertTrue(s.contains("Due: 2025-01-10"));
     }
 }

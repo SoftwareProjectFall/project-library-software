@@ -1,70 +1,185 @@
 package edu.univ.lms;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
 
 public class UserTest {
 
-    public static void main(String[] args) {
-        // Create users
-        User admin = new User("U001", "Alice Admin", "alice", "admin123", true);
-        User normalUser = new User("U002", "Bob User", "bob", "user123", false);
+    // Simple helper to create a normal user
+    private User createNormalUser() {
+        return new User("1", "Mahmoud", "mahmoud", "1234", false, "mahmoud@test.com");
+    }
 
-        System.out.println("=== USER TEST START ===\n");
+    // ===== Getter / Setter tests =====
 
-        // Test 1: Login with correct credentials
-        System.out.println("Test 1: Correct login (Admin)");
-        boolean adminLogin = admin.login("alice", "admin123"); // should succeed
-        System.out.println("Expected: true, Actual: " + adminLogin);
-        System.out.println("Is logged in? " + admin.isLoggedIn());
-        System.out.println();
+    @Test
+    void gettersShouldReturnConstructorValues() {
+        User user = new User("1", "Mahmoud", "mahmoud", "1234", false, "mahmoud@test.com");
 
-        System.out.println("Test 2: Correct login (Normal User)");
-        boolean userLogin = normalUser.login("bob", "user123"); // should succeed
-        System.out.println("Expected: true, Actual: " + userLogin);
-        System.out.println("Is logged in? " + normalUser.isLoggedIn());
-        System.out.println();
+        assertEquals("1", user.getUserId());
+        assertEquals("Mahmoud", user.getName());
+        assertEquals("mahmoud", user.getUsername());
+        assertEquals("1234", user.getPassword());
+        assertFalse(user.isAdmin());
+        assertEquals("mahmoud@test.com", user.getEmail());
+    }
 
-        // Test 2: Login with incorrect credentials
-        System.out.println("Test 3: Incorrect login (Admin)");
-        boolean failAdminLogin = admin.login("alice", "wrongpass"); // should fail
-        System.out.println("Expected: false, Actual: " + failAdminLogin);
-        System.out.println("Is logged in? " + admin.isLoggedIn());
-        System.out.println();
+    @Test
+    void settersShouldUpdateAllFields() {
+        User user = createNormalUser();
 
-        System.out.println("Test 4: Incorrect login (Normal User)");
-        boolean failUserLogin = normalUser.login("bob", "wrongpass"); // should fail
-        System.out.println("Expected: false, Actual: " + failUserLogin);
-        System.out.println("Is logged in? " + normalUser.isLoggedIn());
-        System.out.println();
+        user.setUserId("99");
+        user.setName("Ahmad");
+        user.setUsername("ahmad");
+        user.setPassword("9999");
+        user.setAdmin(true);
+        user.setEmail("ahmad@test.com");
 
-        // Test 3: Logout
-        System.out.println("Test 5: Logout (Admin)");
-        admin.logout(); // should log out if previously logged in
-        System.out.println("Is logged in? " + admin.isLoggedIn());
-        System.out.println();
+        assertEquals("99", user.getUserId());
+        assertEquals("Ahmad", user.getName());
+        assertEquals("ahmad", user.getUsername());
+        assertEquals("9999", user.getPassword());
+        assertTrue(user.isAdmin());
+        assertEquals("ahmad@test.com", user.getEmail());
+    }
 
-        System.out.println("Test 6: Logout (Normal User)");
-        normalUser.logout();
-        System.out.println("Is logged in? " + normalUser.isLoggedIn());
-        System.out.println();
+    // ===== addFine & payFine =====
 
-        // Test 4: Logout when not logged in
-        System.out.println("Test 7: Logout without login (Admin)");
-        admin.logout(); // already logged out
-        System.out.println();
+    @Test
+    void addFine_shouldIncreaseBalanceForPositiveAmount() {
+        User user = createNormalUser();
+        user.addFine(10.0);
+        user.addFine(5.5);
 
-        System.out.println("Test 8: Logout without login (Normal User)");
-        normalUser.logout();
-        System.out.println();
+        assertEquals(15.5, user.getFineBalance());
+    }
 
-        // Test 5: Edge cases
-        System.out.println("Test 9: Login with empty username/password");
-        User testUser = new User("U003", "Test User", "", "", false);
-        boolean emptyLogin = testUser.login("", "");
-        System.out.println("Expected: false, Actual: " + emptyLogin);
-        System.out.println("Is logged in? " + testUser.isLoggedIn());
-        System.out.println();
+    @Test
+    void addFine_shouldIgnoreNonPositiveAmounts() {
+        User user = createNormalUser();
+        user.addFine(0);
+        user.addFine(-3);
 
-        System.out.println("=== USER TEST END ===");
+        assertEquals(0.0, user.getFineBalance());
+    }
+
+    @Test
+    void payFine_shouldFailWhenAmountNotPositive() {
+        User user = createNormalUser();
+        user.addFine(20.0);
+
+        boolean result = user.payFine(0);
+        assertFalse(result);
+        assertEquals(20.0, user.getFineBalance());
+    }
+
+    @Test
+    void payFine_shouldFailWhenNoOutstandingFines() {
+        User user = createNormalUser();
+
+        boolean result = user.payFine(10.0);
+        assertFalse(result);
+        assertEquals(0.0, user.getFineBalance());
+    }
+
+    @Test
+    void payFine_shouldReduceFineBalanceNormally() {
+        User user = createNormalUser();
+        user.addFine(30.0);
+
+        boolean result = user.payFine(10.0);
+
+        assertTrue(result);
+        assertEquals(20.0, user.getFineBalance());
+    }
+
+    @Test
+    void payFine_shouldSetBalanceToZeroWhenOverpaying() {
+        User user = createNormalUser();
+        user.addFine(15.0);
+
+        boolean result = user.payFine(30.0);
+
+        assertTrue(result);
+        assertEquals(0.0, user.getFineBalance());
+    }
+
+    // ===== authenticate / login / logout =====
+
+    @Test
+    void authenticate_shouldReturnTrueForCorrectCredentials() {
+        User user = createNormalUser();
+        assertTrue(user.authenticate("mahmoud", "1234"));
+    }
+
+    @Test
+    void authenticate_shouldReturnFalseForWrongCredentials() {
+        User user = createNormalUser();
+        assertFalse(user.authenticate("wrong", "1234"));
+        assertFalse(user.authenticate("mahmoud", "wrong"));
+    }
+
+    @Test
+    void login_shouldSucceedWithCorrectCredentials() {
+        User user = createNormalUser();
+        boolean result = user.login("mahmoud", "1234");
+
+        assertTrue(result);
+        assertTrue(user.isLoggedIn());
+    }
+
+    @Test
+    void login_shouldFailWithWrongCredentials() {
+        User user = createNormalUser();
+        boolean result = user.login("wrong", "1234");
+
+        assertFalse(result);
+        assertFalse(user.isLoggedIn());
+    }
+
+    @Test
+    void login_shouldFailWhenUsernameOrPasswordEmpty() {
+        User user = createNormalUser();
+
+        assertFalse(user.login("", "1234"));
+        assertFalse(user.login("mahmoud", ""));
+        assertFalse(user.isLoggedIn());
+    }
+
+    @Test
+    void logout_shouldSetLoggedInFalseIfUserWasLoggedIn() {
+        User user = createNormalUser();
+        user.login("mahmoud", "1234");
+        assertTrue(user.isLoggedIn());
+
+        user.logout();
+        assertFalse(user.isLoggedIn());
+    }
+
+    @Test
+    void logout_shouldNotCrashIfUserNotLoggedIn() {
+        User user = createNormalUser();
+        assertFalse(user.isLoggedIn());
+
+        user.logout(); // should not change anything
+        assertFalse(user.isLoggedIn());
+    }
+
+    // ===== toString =====
+
+    @Test
+    void toString_shouldContainBasicInfo() {
+        User user = createNormalUser();
+        user.addFine(10.0);
+        user.login("mahmoud", "1234");
+
+        String text = user.toString();
+
+        assertTrue(text.contains("userId='1'"));
+        assertTrue(text.contains("name='Mahmoud'"));
+        assertTrue(text.contains("username='mahmoud'"));
+        assertTrue(text.contains("email='mahmoud@test.com'"));
+        assertTrue(text.contains("fineBalance=10.0"));
     }
 }
-
