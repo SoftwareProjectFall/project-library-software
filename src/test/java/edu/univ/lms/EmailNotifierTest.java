@@ -7,6 +7,9 @@ import java.io.PrintStream;
 
 import org.junit.jupiter.api.Test;
 
+import edu.univ.lms.model.User;
+import edu.univ.lms.observer.EmailNotifier;
+
 /**
  * Simple test for EmailNotifier.
  * We only check that it prints a message without throwing exceptions.

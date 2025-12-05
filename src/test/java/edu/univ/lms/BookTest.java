@@ -7,6 +7,11 @@ import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 
+import edu.univ.lms.model.Book;
+import edu.univ.lms.strategy.BookFine;
+import edu.univ.lms.strategy.DvdFine;
+import edu.univ.lms.strategy.JournalFine;
+
 public class BookTest {
 
     @Test

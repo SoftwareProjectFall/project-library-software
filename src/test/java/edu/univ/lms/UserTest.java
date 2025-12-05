@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
+import edu.univ.lms.model.User;
+
 public class UserTest {
 
     // Simple helper to create a normal user

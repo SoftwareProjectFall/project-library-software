@@ -1,23 +1,24 @@
-package edu.univ.lms;
+package edu.univ.lms.service;
 
+import edu.univ.lms.model.Book;
+import edu.univ.lms.model.User;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- Represents the Library system.
- Handles user actions, admin actions, item persistence, borrowing rules,
- overdue detection, and strategy-based fines.
+ * Service layer for Library business logic.
+ * Handles user actions, admin actions, item management, borrowing rules,
+ * overdue detection, and strategy-based fines.
  */
-public class Library {
+public class LibraryService {
 
     private List<Book> books = new ArrayList<>();
     private int maxBorrowPerUser = 3;
-
     private int isbnCounter = 100;
 
-    public Library() {}
+    public LibraryService() {}
 
     public void setMaxBorrowPerUser(int max) {
         this.maxBorrowPerUser = max;
@@ -326,3 +327,4 @@ public class Library {
         return Collections.unmodifiableList(books);
     }
 }
+

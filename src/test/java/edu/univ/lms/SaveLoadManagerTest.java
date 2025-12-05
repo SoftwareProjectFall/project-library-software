@@ -12,6 +12,12 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import edu.univ.lms.model.Book;
+import edu.univ.lms.model.User;
+import edu.univ.lms.repository.BookRepository;
+import edu.univ.lms.repository.UserRepository;
+import edu.univ.lms.strategy.BookFine;
+
 public class SaveLoadManagerTest {
 
     private static final String ITEMS_FILE = "items.json";
@@ -34,7 +40,8 @@ public class SaveLoadManagerTest {
         // Ensure file doesn't exist
         Files.deleteIfExists(Paths.get(ITEMS_FILE));
 
-        List<Book> list = SaveLoadManager.loadItems();
+        BookRepository repository = new BookRepository();
+        List<Book> list = repository.loadBooks();
 
         assertNotNull(list);
         assertEquals(0, list.size());
@@ -55,7 +62,8 @@ public class SaveLoadManagerTest {
             pw.write(json);
         }
 
-        List<Book> list = SaveLoadManager.loadItems();
+        BookRepository repository = new BookRepository();
+        List<Book> list = repository.loadBooks();
 
         assertEquals(1, list.size());
         Book b = list.get(0);
@@ -73,7 +81,8 @@ public class SaveLoadManagerTest {
             pw.write("this-is-not-json");
         }
 
-        List<Book> list = SaveLoadManager.loadItems();
+        BookRepository repository = new BookRepository();
+        List<Book> list = repository.loadBooks();
 
         assertNotNull(list);
         assertEquals(0, list.size());
@@ -86,7 +95,8 @@ public class SaveLoadManagerTest {
         // Ensure file doesn't exist
         Files.deleteIfExists(Paths.get(USERS_FILE));
 
-        List<User> list = SaveLoadManager.loadUsers();
+        UserRepository repository = new UserRepository();
+        List<User> list = repository.loadUsers();
 
         assertNotNull(list);
         assertEquals(0, list.size());
@@ -109,7 +119,8 @@ public class SaveLoadManagerTest {
             pw.write(json);
         }
 
-        List<User> list = SaveLoadManager.loadUsers();
+        UserRepository repository = new UserRepository();
+        List<User> list = repository.loadUsers();
 
         assertEquals(1, list.size());
         User u = list.get(0);
@@ -129,7 +140,8 @@ public class SaveLoadManagerTest {
             pw.write("not-json-at-all");
         }
 
-        List<User> list = SaveLoadManager.loadUsers();
+        UserRepository repository = new UserRepository();
+        List<User> list = repository.loadUsers();
 
         assertNotNull(list);
         assertEquals(0, list.size());
@@ -143,7 +155,8 @@ public class SaveLoadManagerTest {
         Book b = new Book("1", "Saved Book", "Author", new BookFine());
         List<Book> books = List.of(b);
 
-        SaveLoadManager.saveItems(books);
+        BookRepository repository = new BookRepository();
+        repository.saveBooks(books);
 
         assertTrue(Files.exists(Paths.get(ITEMS_FILE)));
         String content = Files.readString(Paths.get(ITEMS_FILE));
@@ -159,8 +172,9 @@ public class SaveLoadManagerTest {
         Book b = new Book("1", "Error Book", "Author", new BookFine());
         List<Book> books = List.of(b);
 
+        BookRepository repository = new BookRepository();
         // Must not throw, catch block should handle it
-        assertDoesNotThrow(() -> SaveLoadManager.saveItems(books));
+        assertDoesNotThrow(() -> repository.saveBooks(books));
     }
 
     //                     saveUsers Tests
@@ -171,7 +185,8 @@ public class SaveLoadManagerTest {
         User u = new User("1", "Mahmoud", "mahmoud", "1234", false, "m@test.com");
         List<User> users = List.of(u);
 
-        SaveLoadManager.saveUsers(users);
+        UserRepository repository = new UserRepository();
+        repository.saveUsers(users);
 
         assertTrue(Files.exists(Paths.get(USERS_FILE)));
         String content = Files.readString(Paths.get(USERS_FILE));
@@ -187,7 +202,8 @@ public class SaveLoadManagerTest {
         User u = new User("1", "Error User", "user", "1234", false, "u@test.com");
         List<User> users = List.of(u);
 
+        UserRepository repository = new UserRepository();
         // Should not throw because catch handles it
-        assertDoesNotThrow(() -> SaveLoadManager.saveUsers(users));
+        assertDoesNotThrow(() -> repository.saveUsers(users));
     }
 }

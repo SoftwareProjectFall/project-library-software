@@ -11,6 +11,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import edu.univ.lms.model.Book;
+import edu.univ.lms.model.User;
+import edu.univ.lms.service.LibraryService;
+import edu.univ.lms.service.ReminderService;
+import edu.univ.lms.observer.Observer;
+import edu.univ.lms.strategy.BookFine;
+
 /**
   Unit tests for ReminderService using Mockito.
  
@@ -33,7 +40,7 @@ public class ReminderServiceTest {
         Observer emailObserver = mock(Observer.class);
         reminderService.addObserver(emailObserver);
 
-        Library library = new Library();
+        LibraryService libraryService = new LibraryService();
 
         // We simulate today's fixed date using Mockito.
         LocalDate today = LocalDate.of(2025, 1, 10);
@@ -71,7 +78,7 @@ public class ReminderServiceTest {
         b4.setDueDate(today.plusDays(5)); // NOT overdue
 
         // Load books into library
-        library.setItems(new ArrayList<>(Arrays.asList(b1, b2, b3, b4)));
+        libraryService.setItems(new ArrayList<>(Arrays.asList(b1, b2, b3, b4)));
 
         // Act (Call function under test)
 
@@ -82,7 +89,7 @@ public class ReminderServiceTest {
             mocked.when(LocalDate::now).thenReturn(today);
 
             // Run the method
-            reminderService.sendOverdueReminders(library, allUsers);
+            reminderService.sendOverdueReminders(libraryService, allUsers);
 
             // Assert (Verify behavior)
 

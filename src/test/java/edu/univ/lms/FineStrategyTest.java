@@ -4,6 +4,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
+import edu.univ.lms.model.Book;
+import edu.univ.lms.strategy.BookFine;
+import edu.univ.lms.strategy.DvdFine;
+import edu.univ.lms.strategy.FineStrategy;
+import edu.univ.lms.strategy.JournalFine;
+
 /**
  * Tests for fine calculation strategy classes:
  * - BookFine

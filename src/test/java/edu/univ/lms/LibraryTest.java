@@ -13,8 +13,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import edu.univ.lms.model.Book;
+import edu.univ.lms.model.User;
+import edu.univ.lms.service.LibraryService;
+import edu.univ.lms.strategy.BookFine;
+import edu.univ.lms.strategy.DvdFine;
+
 /**
-  Unit tests for the Library class.
+  Unit tests for the LibraryService class.
   Covers:
    - Admin actions (add / remove / update)
    - Borrow / return logic (books & DVDs, fines, restrictions)
@@ -55,7 +61,7 @@ public class LibraryTest {
 
     @Test
     void addBook_shouldAllowLoggedInAdminAndAssignIsbn() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
 
         Book book = new Book("", "Clean Code", "Robert Martin", new BookFine());
@@ -70,7 +76,7 @@ public class LibraryTest {
 
     @Test
     void addBook_shouldRejectNonAdmin() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User normalUser = createLoggedInUser("2");
         Book book = new Book("", "Clean Code", "Robert Martin", new BookFine());
 
@@ -82,7 +88,7 @@ public class LibraryTest {
 
     @Test
     void removeBook_shouldRemoveIfNotBorrowed() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
 
         Book book = createBook("101", "Java");
@@ -99,7 +105,7 @@ public class LibraryTest {
     // NEW: user not admin / not logged in → should fail
     @Test
     void removeBook_shouldRejectWhenUserIsNotAdminOrNotLoggedIn() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
 
         // normal user (logged in but not admin)
         User normalUser = createLoggedInUser("2");
@@ -117,7 +123,7 @@ public class LibraryTest {
     // NEW: isbn null or blank → guard if (isbn == null || isbn.isBlank())
     @Test
     void removeBook_shouldRejectWhenIsbnIsNullOrBlank() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
 
         Book book = createBook("101", "Java");
@@ -135,7 +141,7 @@ public class LibraryTest {
     // NEW: item not found → reach "Item not found." branch
     @Test
     void removeBook_shouldReturnFalseWhenItemNotFound() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
 
         Book book = createBook("101", "Java");
@@ -149,7 +155,7 @@ public class LibraryTest {
 
     @Test
     void returnBook_shouldRejectWhenUserNotLoggedIn() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
 
         // user created but NOT logged in
         User user = new User("2", "User2", "user2", "pass", false, "user2@test.com");
@@ -168,7 +174,7 @@ public class LibraryTest {
 
     @Test
     void returnBook_shouldRejectWhenAdminTriesToReturn() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
 
         Book book = createBook("101", "Java Book");
@@ -184,7 +190,7 @@ public class LibraryTest {
 
     @Test
     void returnBook_shouldRejectWhenItemNotFound() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
 
         // library has one book with ISBN 101
@@ -201,7 +207,7 @@ public class LibraryTest {
 
     @Test
     void borrowBook_shouldRejectWhenUserNotLoggedIn() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
 
         // user is NOT logged in (no login call)
         User user = new User("2", "User2", "user2", "pass", false, "user2@test.com");
@@ -217,7 +223,7 @@ public class LibraryTest {
 
     @Test
     void borrowBook_shouldRejectWhenUserIsAdmin() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
 
         Book book = createBook("101", "Admin Book");
@@ -231,7 +237,7 @@ public class LibraryTest {
 
     @Test
     void borrowBook_shouldRejectWhenBorrowLimitReached() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         library.setMaxBorrowPerUser(1);
 
         User user = createLoggedInUser("2");
@@ -255,7 +261,7 @@ public class LibraryTest {
 
     @Test
     void borrowBook_shouldRejectWhenItemNotFound() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
 
         // library has book 101 only
@@ -270,7 +276,7 @@ public class LibraryTest {
 
     @Test
     void borrowBook_shouldRejectWhenBookAlreadyBorrowed() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
 
         Book book = createBook("101", "Java");
@@ -287,7 +293,7 @@ public class LibraryTest {
 
     @Test
     void returnBook_shouldRejectWhenBookNotBorrowedByThisUser() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
 
         // book borrowed by another user
@@ -306,7 +312,7 @@ public class LibraryTest {
 
     @Test
     void updateBook_shouldUpdateTitleAndAuthor() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
 
         Book book = createBook("101", "Old");
@@ -321,7 +327,7 @@ public class LibraryTest {
 
     @Test
     void updateBook_shouldReturnFalseWhenNotFound() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
 
         boolean result = library.updateBook(admin, "999", "X", "Y");
@@ -333,7 +339,7 @@ public class LibraryTest {
 
     @Test
     void borrowBook_shouldBorrowNormalBookFor28Days() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
         Book book = createBook("101", "Java Book");
         library.setItems(new ArrayList<>(Arrays.asList(book)));
@@ -357,7 +363,7 @@ public class LibraryTest {
 
     @Test
     void borrowBook_shouldBorrowDvdFor7Days() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
         Book dvd = createDvd("201", "Some Movie");
         library.setItems(new ArrayList<>(Arrays.asList(dvd)));
@@ -378,7 +384,7 @@ public class LibraryTest {
 
     @Test
     void borrowBook_shouldRejectWhenUserHasOverdueItems() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
 
         // Existing overdue book for this user
@@ -408,7 +414,7 @@ public class LibraryTest {
 
     @Test
     void borrowBook_shouldRejectWhenUserHasUnpaidFines() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
         user.addFine(10.0); // unpaid fine
 
@@ -425,7 +431,7 @@ public class LibraryTest {
 
     @Test
     void returnBook_onTimeShouldNotAddFine() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
         Book book = createBook("101", "Java Book");
         library.setItems(new ArrayList<>(Arrays.asList(book)));
@@ -451,7 +457,7 @@ public class LibraryTest {
 
     @Test
     void returnBook_lateShouldAddFine() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
         Book book = createBook("101", "Java Book");
         library.setItems(new ArrayList<>(Arrays.asList(book)));
@@ -478,7 +484,7 @@ public class LibraryTest {
 
     @Test
     void searchBooksByTitle_shouldReturnMatchingBooks() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         Book b1 = createBook("1", "Java Programming");
         Book b2 = createBook("2", "Python Guide");
         Book b3 = createBook("3", "Advanced Java");
@@ -493,7 +499,7 @@ public class LibraryTest {
 
     @Test
     void searchBooksByAuthor_shouldReturnMatchingBooks() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         Book b1 = new Book("1", "Book A", "Mahmoud", new BookFine());
         Book b2 = new Book("2", "Book B", "Other", new BookFine());
         Book b3 = new Book("3", "Book C", "Mahmoud Ali", new BookFine());
@@ -508,7 +514,7 @@ public class LibraryTest {
 
     @Test
     void searchBookByIsbn_shouldReturnCorrectBookOrNull() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         Book b1 = createBook("10", "A");
         Book b2 = createBook("20", "B");
         library.setItems(new ArrayList<>(Arrays.asList(b1, b2)));
@@ -519,7 +525,7 @@ public class LibraryTest {
 
     @Test
     void hasOverdueBooks_andCountBorrowedBooks_shouldWorkTogether() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
 
         LocalDate today = LocalDate.now();
@@ -546,7 +552,7 @@ public class LibraryTest {
 
     @Test
     void showAllBooks_shouldPrintAvailableAndOverdueItems() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
 
         // Capture System.out
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -589,7 +595,7 @@ public class LibraryTest {
 
     @Test
     void showOverdueBooks_shouldPrintOnlyOverdueItems() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
 
         LocalDate fixedToday = LocalDate.of(2025, 1, 10);
 
@@ -629,7 +635,7 @@ public class LibraryTest {
 
     @Test
     void showBorrowedBooks_shouldPrintOnlyCurrentUserItems() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
 
         User user1 = createLoggedInUser("1");
         User user2 = createLoggedInUser("2");
@@ -672,7 +678,7 @@ public class LibraryTest {
 
     @Test
     void restoreIsbnCounter_shouldSetCounterToMaxExistingIsbn() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
 
         // Book with numeric ISBN (valid)
@@ -701,7 +707,7 @@ public class LibraryTest {
 
     @Test
     void unregisterUser_shouldAllowAdminWhenNoLoansAndNoFines() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
         User target = createLoggedInUser("2");
 
@@ -717,7 +723,7 @@ public class LibraryTest {
 
     @Test
     void unregisterUser_shouldRejectIfTargetHasLoans() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
         User target = createLoggedInUser("2");
 
@@ -738,7 +744,7 @@ public class LibraryTest {
 
     @Test
     void returnBook_forceFullLateBranchCoverage() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("9");
 
         Book book = createBook("500", "Late Testing Book");
@@ -772,7 +778,7 @@ public class LibraryTest {
 
     @Test
     void returnBook_lateShouldCalculateFineAndPrintMessage() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
         Book book = createBook("101", "Late Book");
         library.setItems(new ArrayList<>(Arrays.asList(book)));
@@ -811,7 +817,7 @@ public class LibraryTest {
 
     @Test
     void unregisterUser_shouldRejectIfTargetHasFines() {
-        Library library = new Library();
+        LibraryService library = new LibraryService();
         User admin = createLoggedInAdmin();
         User target = createLoggedInUser("2");
         target.addFine(10.0); // has unpaid fine
