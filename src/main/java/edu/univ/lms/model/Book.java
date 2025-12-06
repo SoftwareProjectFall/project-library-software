@@ -1,20 +1,22 @@
 package edu.univ.lms.model;
 
 import java.time.LocalDate;
-import edu.univ.lms.strategy.FineStrategy;
+
 import edu.univ.lms.strategy.BookFine;
 import edu.univ.lms.strategy.DvdFine;
+import edu.univ.lms.strategy.FineStrategy;
 import edu.univ.lms.strategy.JournalFine;
 
 /**
- * Represents a library item (Book, DVD, Journal) using the Strategy Pattern
- * for fine calculation.
+ * Represents a library item (book, DVD, or journal) and uses the Strategy
+ * pattern to calculate fines based on the item type.
  */
 public class Book {
 
     // ---------------------------------------------------------
     // Fields
     // ---------------------------------------------------------
+
     private String isbn;
     private String title;
     private String author;
@@ -24,17 +26,29 @@ public class Book {
     private LocalDate borrowDate;
     private LocalDate dueDate;
 
-    // Strategy Pattern for different fine rules
-    private FineStrategy fineStrategy;
+    /**
+     * Strategy used to calculate fines for this item.
+     * Marked transient so it is not serialized; it is rebuilt using {@code fineType}.
+     */
+    private transient FineStrategy fineStrategy;
 
-    // Needed for JSON loading (to rebuild fineStrategy after restore)
-    private String fineType;  // "BOOK", "DVD", "JOURNAL"
+    /**
+     * Logical type of the item, used to rebuild {@link #fineStrategy} after
+     * JSON deserialization. Expected values: {@code "BOOK"}, {@code "DVD"}, {@code "JOURNAL"}.
+     */
+    private String fineType;
 
     // ---------------------------------------------------------
     // Constructors
     // ---------------------------------------------------------
 
-    // Basic constructor
+    /**
+     * Creates a new book item with a default book fine strategy.
+     *
+     * @param isbn   ISBN or internal identifier
+     * @param title  item title
+     * @param author item author or creator
+     */
     public Book(String isbn, String title, String author) {
         this.isbn = isbn;
         this.title = title;
@@ -43,24 +57,44 @@ public class Book {
         this.fineType = "BOOK";
     }
 
-    // Constructor with strategy
+    /**
+     * Creates a new item with the given fine strategy.
+     *
+     * @param isbn         ISBN or internal identifier
+     * @param title        item title
+     * @param author       item author or creator
+     * @param fineStrategy strategy used to calculate fines
+     */
     public Book(String isbn, String title, String author, FineStrategy fineStrategy) {
         this.isbn = isbn;
         this.title = title;
         this.author = author;
         this.fineStrategy = fineStrategy;
 
-        if (fineStrategy instanceof BookFine) fineType = "BOOK";
-        else if (fineStrategy instanceof DvdFine) fineType = "DVD";
-        else if (fineStrategy instanceof JournalFine) fineType = "JOURNAL";
+        if (fineStrategy instanceof BookFine) {
+            fineType = "BOOK";
+        } else if (fineStrategy instanceof DvdFine) {
+            fineType = "DVD";
+        } else if (fineStrategy instanceof JournalFine) {
+            fineType = "JOURNAL";
+        }
     }
 
-    // Needed for JSON serialization/deserialization
-    public Book() {}
+    /**
+     * No-arg constructor required for JSON deserialization.
+     */
+    public Book() {
+    }
 
     // ---------------------------------------------------------
     // Getters
     // ---------------------------------------------------------
+
+    /**
+     * Returns the logical type used to rebuild the fine strategy.
+     *
+     * @return fine type label (e.g. "BOOK", "DVD", "JOURNAL")
+     */
     public String getFineType() {
         return fineType;
     }
@@ -96,6 +130,7 @@ public class Book {
     // ---------------------------------------------------------
     // Setters
     // ---------------------------------------------------------
+
     public void setFineType(String fineType) {
         this.fineType = fineType;
     }
@@ -133,38 +168,56 @@ public class Book {
     // ---------------------------------------------------------
 
     /**
-     * Calculates the fine using the Strategy Pattern.
+     * Calculates the fine for this item using its configured fine strategy.
+     *
+     * @param overdueDays number of days the item is overdue
+     * @return calculated fine amount
      */
     public double calculateFine(long overdueDays) {
         if (fineStrategy == null) {
-            return overdueDays * 1.0; // Fallback to default book fine
+            // Fallback: simple default fine calculation
+            return overdueDays * 1.0;
         }
         return fineStrategy.calculateFine(overdueDays);
     }
 
     /**
-     * Returns item type as a clean label.
+     * Returns the item type as a short label based on the fine strategy.
+     *
+     * @return "BOOK", "DVD", or "JOURNAL"
      */
     public String getItemType() {
-        if (fineStrategy instanceof DvdFine) return "DVD";
-        if (fineStrategy instanceof JournalFine) return "JOURNAL";
+        if (fineStrategy instanceof DvdFine) {
+            return "DVD";
+        }
+        if (fineStrategy instanceof JournalFine) {
+            return "JOURNAL";
+        }
         return "BOOK";
     }
 
     /**
-     * After loading JSON, rebuild the actual fine strategy.
+     * Rebuilds the fine strategy after JSON deserialization
+     * using the stored {@link #fineType} value.
      */
     public void rebuildFineStrategy() {
         switch (fineType) {
-            case "DVD": fineStrategy = new DvdFine(); break;
-            case "JOURNAL": fineStrategy = new JournalFine(); break;
-            default: fineStrategy = new BookFine(); break;
+            case "DVD":
+                fineStrategy = new DvdFine();
+                break;
+            case "JOURNAL":
+                fineStrategy = new JournalFine();
+                break;
+            default:
+                fineStrategy = new BookFine();
+                break;
         }
     }
 
     // ---------------------------------------------------------
     // toString
     // ---------------------------------------------------------
+
     @Override
     public String toString() {
         String status = borrowed
@@ -180,4 +233,3 @@ public class Book {
                 '}';
     }
 }
-

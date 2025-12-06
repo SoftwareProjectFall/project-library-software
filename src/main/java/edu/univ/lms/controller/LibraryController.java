@@ -2,6 +2,8 @@ package edu.univ.lms.controller;
 
 import edu.univ.lms.model.Book;
 import edu.univ.lms.model.User;
+import edu.univ.lms.observer.EmailNotifier;
+import edu.univ.lms.observer.RealEmailNotifier;
 import edu.univ.lms.repository.BookRepository;
 import edu.univ.lms.repository.UserRepository;
 import edu.univ.lms.service.LibraryService;
@@ -11,23 +13,34 @@ import edu.univ.lms.strategy.BookFine;
 import edu.univ.lms.strategy.DvdFine;
 import edu.univ.lms.strategy.FineStrategy;
 import edu.univ.lms.strategy.JournalFine;
-import edu.univ.lms.observer.EmailNotifier;
 
 import java.util.List;
 import java.util.Scanner;
 
 /**
- * Controller layer for handling user interface and coordinating between services.
- * This is the presentation layer that interacts with users and delegates to services.
+ * Main controller for the Library Management System.
+ * <p>
+ * This class coordinates user interaction (console UI) with the
+ * underlying services and repositories. It provides:
+ * <ul>
+ *     <li>Application startup and shutdown logic</li>
+ *     <li>User registration and authentication</li>
+ *     <li>Admin and user menus</li>
+ *     <li>Integration with reminder and email notification services</li>
+ * </ul>
  */
 public class LibraryController {
 
-    private LibraryService libraryService;
-    private UserService userService;
-    private ReminderService reminderService;
-    private BookRepository bookRepository;
-    private List<User> users;
+    private final LibraryService libraryService;
+    private final UserService userService;
+    private final ReminderService reminderService;
+    private final BookRepository bookRepository;
+    private final List<User> users;
 
+    /**
+     * Constructs the controller, initializes repositories, services,
+     * email notifiers, and loads persisted data.
+     */
     public LibraryController() {
         // Initialize repositories
         UserRepository userRepository = new UserRepository();
@@ -37,15 +50,24 @@ public class LibraryController {
         libraryService = new LibraryService();
         userService = new UserService(userRepository);
         reminderService = new ReminderService();
+
+        // Register email notifiers
+        // Console-based email simulation
         reminderService.addObserver(new EmailNotifier());
 
-        // Load data on startup
+        // Real email notifier (Gmail SMTP)
+        // TODO: replace with your Gmail address and APP PASSWORD (do NOT commit real credentials)
+        String senderEmail = "hamzaqanaze@gmail.com";
+        String senderAppPassword = "YOUR_APP_PASSWORD_HERE";
+        reminderService.addObserver(new RealEmailNotifier(senderEmail, senderAppPassword));
+
+        // Load persisted users and items
         users = userService.loadUsers();
         List<Book> items = bookRepository.loadBooks();
         libraryService.setItems(items);
         libraryService.restoreIsbnCounter();
 
-        // If no users, create default admin + demo user
+        // Create default admin and demo user if user list is empty
         if (users.isEmpty()) {
             User admin = new User("1", "Admin User", "admin", "1234", true, "admin@gmail.com");
             User demo = new User("2", "Hamza", "hamza", "pass", false, "hamza@example.com");
@@ -56,15 +78,30 @@ public class LibraryController {
     }
 
     // ------------------- Utility UI -------------------
+
+    /**
+     * Prints a visual separator to the console to improve readability
+     * between different screens.
+     */
     public static void clearScreen() {
         System.out.println("\n----------------------------------------------\n");
     }
 
+    /**
+     * Prompts the user to press Enter to continue, blocking until input is received.
+     *
+     * @param input scanner used to read from standard input
+     */
     public static void pressEnterToContinue(Scanner input) {
         System.out.println("\nPress Enter to continue...");
         input.nextLine();
     }
 
+    /**
+     * Prints a single library item (book/DVD/journal) in a formatted line.
+     *
+     * @param b the book/item to print
+     */
     public static void printItem(Book b) {
         System.out.println(
                 "ISBN: " + b.getIsbn() +
@@ -75,6 +112,11 @@ public class LibraryController {
         );
     }
 
+    /**
+     * Prints all items in the given list, or a message if the list is empty.
+     *
+     * @param list list of books/items to display
+     */
     public static void printItemList(List<Book> list) {
         if (list == null || list.isEmpty()) {
             System.out.println("No results found.");
@@ -86,11 +128,17 @@ public class LibraryController {
     }
 
     // ------------------- Register User -------------------
-    public void registerUser(Scanner input) {
 
+    /**
+     * Handles interactive user registration via the console.
+     * Performs basic validation for name, username, password and email.
+     *
+     * @param input scanner used to read user input
+     */
+    public void registerUser(Scanner input) {
         System.out.println("\n========== REGISTER NEW USER ==========");
 
-        // Name
+        // Full name
         String name;
         do {
             System.out.print("Full name: ");
@@ -144,7 +192,7 @@ public class LibraryController {
                 System.out.println("Email cannot be empty.");
                 continue;
             }
-            if (email.indexOf('@') == -1) {
+            if (!email.contains("@")) {
                 System.out.println("Invalid email format. Must contain '@'.");
                 continue;
             }
@@ -155,15 +203,18 @@ public class LibraryController {
     }
 
     // ------------------- MAIN -------------------
-    public void run() {
 
+    /**
+     * Starts the main application loop, handling login, registration,
+     * and menu navigation for both admin and regular users.
+     */
+    public void run() {
         Scanner input = new Scanner(System.in);
 
         System.out.println("===== Welcome to the Library Management System =====");
 
-        // ------------------- MAIN LOOP -------------------
+        // Main loop
         while (true) {
-
             clearScreen();
             System.out.println("1. Login");
             System.out.println("2. Register");
@@ -192,7 +243,7 @@ public class LibraryController {
                 continue;
             }
 
-            // ------------------- LOGIN -------------------
+            // Login
             String username;
             do {
                 System.out.print("Username: ");
@@ -221,11 +272,10 @@ public class LibraryController {
 
             logged.login(username, password);
 
-            // ===================== ADMIN MENU =====================
+            // Route to appropriate menu
             if (logged.isAdmin()) {
                 handleAdminMenu(logged, input);
             } else {
-                // ===================== USER MENU =====================
                 handleUserMenu(logged, input);
             }
         }
@@ -233,6 +283,13 @@ public class LibraryController {
         input.close();
     }
 
+    /**
+     * Displays and handles the admin menu, allowing item management,
+     * overdue checks, reminders, and user administration.
+     *
+     * @param logged currently logged-in admin user
+     * @param input  scanner used to read admin input
+     */
     private void handleAdminMenu(User logged, Scanner input) {
         while (logged.isLoggedIn()) {
 
@@ -251,7 +308,7 @@ public class LibraryController {
             String adminChoice = input.nextLine().trim();
 
             if ("1".equals(adminChoice)) {
-                // Add Item
+                // Add item
                 String title;
                 do {
                     System.out.print("Title: ");
@@ -295,13 +352,12 @@ public class LibraryController {
                 Book newItem = new Book("", title, author, fs);
                 libraryService.addBook(logged, newItem);
 
-                // Auto save items after adding
+                // Persist items after modification
                 bookRepository.saveBooks(libraryService.getAllBooks());
 
                 pressEnterToContinue(input);
-            }
-            else if ("2".equals(adminChoice)) {
-                // Remove Item
+            } else if ("2".equals(adminChoice)) {
+                // Remove item
                 System.out.print("ISBN to remove: ");
                 String remIsbn = input.nextLine().trim();
 
@@ -309,9 +365,8 @@ public class LibraryController {
                 bookRepository.saveBooks(libraryService.getAllBooks());
 
                 pressEnterToContinue(input);
-            }
-            else if ("3".equals(adminChoice)) {
-                // Update Item
+            } else if ("3".equals(adminChoice)) {
+                // Update item
                 System.out.print("ISBN to update: ");
                 String updIsbn = input.nextLine().trim();
 
@@ -325,20 +380,16 @@ public class LibraryController {
                 bookRepository.saveBooks(libraryService.getAllBooks());
 
                 pressEnterToContinue(input);
-            }
-            else if ("4".equals(adminChoice)) {
+            } else if ("4".equals(adminChoice)) {
                 libraryService.showAllBooks();
                 pressEnterToContinue(input);
-            }
-            else if ("5".equals(adminChoice)) {
+            } else if ("5".equals(adminChoice)) {
                 libraryService.showOverdueBooks();
                 pressEnterToContinue(input);
-            }
-            else if ("6".equals(adminChoice)) {
+            } else if ("6".equals(adminChoice)) {
                 reminderService.sendOverdueReminders(libraryService, users);
                 pressEnterToContinue(input);
-            }
-            else if ("7".equals(adminChoice)) {
+            } else if ("7".equals(adminChoice)) {
                 System.out.print("Enter userId to unregister: ");
                 String uid = input.nextLine().trim();
 
@@ -358,17 +409,22 @@ public class LibraryController {
                 }
 
                 pressEnterToContinue(input);
-            }
-            else if ("8".equals(adminChoice)) {
+            } else if ("8".equals(adminChoice)) {
                 logged.logout();
-            }
-            else {
+            } else {
                 System.out.println("Invalid choice. Please select from 1 to 8.");
                 pressEnterToContinue(input);
             }
         }
     }
 
+    /**
+     * Displays and handles the regular user menu, allowing borrowing,
+     * returning, viewing fines, and searching items.
+     *
+     * @param logged currently logged-in user
+     * @param input  scanner used to read user input
+     */
     private void handleUserMenu(User logged, Scanner input) {
         while (logged.isLoggedIn()) {
 
@@ -387,26 +443,23 @@ public class LibraryController {
             String userChoice = input.nextLine().trim();
 
             if ("1".equals(userChoice)) {
-                // Borrow
+                // Borrow item
                 System.out.print("Enter ISBN: ");
                 String borrowIsbn = input.nextLine().trim();
                 libraryService.borrowBook(logged, borrowIsbn);
                 bookRepository.saveBooks(libraryService.getAllBooks());
                 pressEnterToContinue(input);
-            }
-            else if ("2".equals(userChoice)) {
-                // Return
+            } else if ("2".equals(userChoice)) {
+                // Return item
                 System.out.print("Enter ISBN to return: ");
                 String returnIsbn = input.nextLine().trim();
                 libraryService.returnBook(logged, returnIsbn);
                 bookRepository.saveBooks(libraryService.getAllBooks());
                 pressEnterToContinue(input);
-            }
-            else if ("3".equals(userChoice)) {
+            } else if ("3".equals(userChoice)) {
                 System.out.println("Your fines: " + logged.getFineBalance() + " NIS");
                 pressEnterToContinue(input);
-            }
-            else if ("4".equals(userChoice)) {
+            } else if ("4".equals(userChoice)) {
                 double amount = -1;
                 while (amount <= 0) {
                     try {
@@ -424,17 +477,14 @@ public class LibraryController {
                 logged.payFine(amount);
                 userService.saveUsers(users);
                 pressEnterToContinue(input);
-            }
-            else if ("5".equals(userChoice)) {
+            } else if ("5".equals(userChoice)) {
                 libraryService.showAllBooks();
                 pressEnterToContinue(input);
-            }
-            else if ("6".equals(userChoice)) {
+            } else if ("6".equals(userChoice)) {
                 libraryService.showBorrowedBooks(logged);
                 pressEnterToContinue(input);
-            }
-            else if ("7".equals(userChoice)) {
-                // Search Items
+            } else if ("7".equals(userChoice)) {
+                // Search items
                 System.out.println("\n============== SEARCH ITEMS ==============");
                 System.out.println("1. By Title");
                 System.out.println("2. By Author");
@@ -466,15 +516,12 @@ public class LibraryController {
                 }
 
                 pressEnterToContinue(input);
-            }
-            else if ("8".equals(userChoice)) {
+            } else if ("8".equals(userChoice)) {
                 logged.logout();
-            }
-            else {
+            } else {
                 System.out.println("Invalid choice. Please select from 1 to 8.");
                 pressEnterToContinue(input);
             }
         }
     }
 }
-

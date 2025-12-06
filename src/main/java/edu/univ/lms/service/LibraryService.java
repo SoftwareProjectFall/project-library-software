@@ -2,37 +2,73 @@ package edu.univ.lms.service;
 
 import edu.univ.lms.model.Book;
 import edu.univ.lms.model.User;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Service layer for Library business logic.
- * Handles user actions, admin actions, item management, borrowing rules,
- * overdue detection, and strategy-based fines.
+ * Service layer for all library-related business logic.
+ * <p>
+ * This class manages:
+ * <ul>
+ *     <li>Administrative operations (add, update, remove items)</li>
+ *     <li>User borrowing and returning rules</li>
+ *     <li>Overdue detection</li>
+ *     <li>Fine calculation (Strategy Pattern handled inside {@link Book})</li>
+ *     <li>Search utilities</li>
+ * </ul>
+ * <p>
+ * The service does not handle user authentication or persistence,
+ * which is delegated to {@code UserService} and repository classes.
  */
 public class LibraryService {
 
+    /** Internal list of books currently in the library system. */
     private List<Book> books = new ArrayList<>();
+
+    /** Maximum number of items a regular user may borrow. */
     private int maxBorrowPerUser = 3;
+
+    /** Counter used to auto-generate new ISBN values. */
     private int isbnCounter = 100;
 
+    /** Default constructor. */
     public LibraryService() {}
 
+    /**
+     * Sets the borrowing limit allowed per user.
+     *
+     * @param max maximum number of items a user may borrow
+     */
     public void setMaxBorrowPerUser(int max) {
         this.maxBorrowPerUser = max;
     }
 
+    /**
+     * Generates the next ISBN number for a new library item.
+     *
+     * @return generated ISBN as a string
+     */
     private String generateIsbn() {
         isbnCounter++;
         return String.valueOf(isbnCounter);
     }
 
+    /**
+     * Loads books restored from the repository.
+     *
+     * @param loadedBooks list of books from storage
+     */
     public void setItems(List<Book> loadedBooks) {
-        this.books = loadedBooks != null ? loadedBooks : new ArrayList<>();
+        this.books = (loadedBooks != null) ? loadedBooks : new ArrayList<>();
     }
 
+    /**
+     * Recomputes the ISBN counter based on the highest stored ISBN.
+     * Must be called once after loading items from persistence.
+     */
     public void restoreIsbnCounter() {
         int max = 100;
         for (Book b : books) {
@@ -44,8 +80,17 @@ public class LibraryService {
         this.isbnCounter = max;
     }
 
-    // ---------------- Admin actions ----------------
+    // =========================================================
+    // Admin Actions
+    // =========================================================
 
+    /**
+     * Adds a new book to the library. Only admins may perform this action.
+     *
+     * @param user the admin performing the operation
+     * @param book the book object to add
+     * @return true if successful, false otherwise
+     */
     public boolean addBook(User user, Book book) {
         if (!user.isLoggedIn() || !user.isAdmin()) {
             System.out.println("Only admins can add items.");
@@ -56,12 +101,19 @@ public class LibraryService {
 
         String generatedISBN = generateIsbn();
         book.setIsbn(generatedISBN);
-
         books.add(book);
+
         System.out.println("Item added successfully with ISBN: " + generatedISBN);
         return true;
     }
 
+    /**
+     * Removes a book from the library if it is not borrowed.
+     *
+     * @param user admin performing the action
+     * @param isbn ISBN of the item to remove
+     * @return true if removed, false if validation fails
+     */
     public boolean removeBook(User user, String isbn) {
         if (!user.isLoggedIn() || !user.isAdmin()) {
             System.out.println("Only admins can remove items.");
@@ -72,19 +124,31 @@ public class LibraryService {
 
         for (Book b : books) {
             if (b.getIsbn().equalsIgnoreCase(isbn)) {
+
                 if (b.isBorrowed()) {
                     System.out.println("Cannot remove a borrowed item.");
                     return false;
                 }
+
                 books.remove(b);
                 System.out.println("Item removed successfully.");
                 return true;
             }
         }
+
         System.out.println("Item not found.");
         return false;
     }
 
+    /**
+     * Updates a book's title or author.
+     *
+     * @param user admin performing the update
+     * @param isbn ISBN of the item to update
+     * @param newTitle optional new title
+     * @param newAuthor optional new author
+     * @return true if updated, false otherwise
+     */
     public boolean updateBook(User user, String isbn, String newTitle, String newAuthor) {
         if (!user.isLoggedIn() || !user.isAdmin()) {
             System.out.println("Only admins can update items.");
@@ -95,16 +159,35 @@ public class LibraryService {
             if (b.getIsbn().equalsIgnoreCase(isbn)) {
                 if (newTitle != null && !newTitle.isBlank()) b.setTitle(newTitle);
                 if (newAuthor != null && !newAuthor.isBlank()) b.setAuthor(newAuthor);
+
                 System.out.println("Item updated successfully.");
                 return true;
             }
         }
+
         System.out.println("Item not found.");
         return false;
     }
 
-    // ---------------- Borrow / Return ----------------
+    // =========================================================
+    // Borrowing / Returning
+    // =========================================================
 
+    /**
+     * Allows a user to borrow an item if all borrowing conditions are satisfied:
+     * <ul>
+     *     <li>User is logged in</li>
+     *     <li>User is not an admin</li>
+     *     <li>User has no overdue items</li>
+     *     <li>User has no unpaid fines</li>
+     *     <li>Borrowing limit not exceeded</li>
+     *     <li>Item exists and is not already borrowed</li>
+     * </ul>
+     *
+     * @param user the borrower
+     * @param isbn the ISBN of the item to borrow
+     * @return true if successfully borrowed, false otherwise
+     */
     public boolean borrowBook(User user, String isbn) {
 
         if (!user.isLoggedIn()) {
@@ -128,7 +211,8 @@ public class LibraryService {
         }
 
         if (user.getFineBalance() > 0) {
-            System.out.println("Borrowing denied. You have unpaid fines: " + user.getFineBalance() + " NIS");
+            System.out.println("Borrowing denied. You have unpaid fines: " +
+                    user.getFineBalance() + " NIS");
             return false;
         }
 
@@ -145,37 +229,36 @@ public class LibraryService {
 
         LocalDate today = LocalDate.now();
 
-        // ⭐⭐⭐ IMPORTANT CHANGE — DVD = 7 DAYS ⭐⭐⭐
-        int borrowDays;
-        String type = book.getItemType();
-
-        if (type.equalsIgnoreCase("DVD")) {
-            borrowDays = 7;   // DVD only 7 days
-        } else {
-            borrowDays = 28;  // Book and Journal = 28 days
+        // Borrow duration: DVD = 7 days, Book/Journal = 28 days
+        switch (book.getItemType()) {
+            case "DVD":
+                book.setDueDate(today.plusDays(7));
+                break;
+            case "Journal":
+            case "Book":
+            default:
+                book.setDueDate(today.plusDays(28));
+                break;
         }
 
         book.setBorrowed(true);
         book.setBorrowedByUserId(user.getUserId());
         book.setBorrowDate(today);
-     // ---------------- Borrow Duration Logic ----------------
-        switch (book.getItemType()) {
-            case "DVD":
-                book.setDueDate(today.plusDays(7));  // DVDs: 7 days
-                break;
 
-            case "Journal":
-            case "Book":
-            default:
-                book.setDueDate(today.plusDays(28)); // Books & Journals: 28 days
-                break;
-        }
+        System.out.println(user.getName() + " borrowed \"" +
+                book.getTitle() + "\". Due: " + book.getDueDate());
 
-
-        System.out.println(user.getName() + " borrowed \"" + book.getTitle() + "\". Due: " + book.getDueDate());
         return true;
     }
 
+    /**
+     * Handles the return of an item borrowed by a user.
+     * Calculates any overdue fine using the Strategy Pattern.
+     *
+     * @param user the returning user
+     * @param isbn the ISBN of the item
+     * @return true if returned successfully
+     */
     public boolean returnBook(User user, String isbn) {
 
         if (!user.isLoggedIn()) {
@@ -189,25 +272,30 @@ public class LibraryService {
         }
 
         Book book = searchBookByIsbn(isbn);
-
         if (book == null) {
             System.out.println("Item not found.");
             return false;
         }
 
-        if (!book.isBorrowed() || !user.getUserId().equals(book.getBorrowedByUserId())) {
+        if (!book.isBorrowed() ||
+            !user.getUserId().equals(book.getBorrowedByUserId())) {
+
             System.out.println("This item was not borrowed by you.");
             return false;
         }
 
         LocalDate today = LocalDate.now();
 
+        // Late return logic
         if (today.isAfter(book.getDueDate())) {
-            long overdueDays = java.time.temporal.ChronoUnit.DAYS.between(book.getDueDate(), today);
+            long overdueDays = java.time.temporal.ChronoUnit.DAYS
+                    .between(book.getDueDate(), today);
+
             double fine = book.calculateFine(overdueDays);
             user.addFine(fine);
 
-            System.out.println("Late return! Overdue by " + overdueDays + " days. Fine: " + fine + " NIS");
+            System.out.println("Late return! Overdue by " + overdueDays +
+                    " days. Fine: " + fine + " NIS");
         }
 
         book.setBorrowed(false);
@@ -217,8 +305,11 @@ public class LibraryService {
         return true;
     }
 
-    // ---------------- Searching ----------------
+    // =========================================================
+    // Search Utilities
+    // =========================================================
 
+    /** Searches an item by ISBN. */
     public Book searchBookByIsbn(String isbn) {
         for (Book b : books) {
             if (b.getIsbn().equalsIgnoreCase(isbn)) return b;
@@ -226,24 +317,33 @@ public class LibraryService {
         return null;
     }
 
+    /** Searches items by title (partial matching). */
     public List<Book> searchBooksByTitle(String title) {
         List<Book> list = new ArrayList<>();
         for (Book b : books) {
-            if (b.getTitle().toLowerCase().contains(title.toLowerCase())) list.add(b);
+            if (b.getTitle().toLowerCase().contains(title.toLowerCase())) {
+                list.add(b);
+            }
         }
         return list;
     }
 
+    /** Searches items by author (partial matching). */
     public List<Book> searchBooksByAuthor(String author) {
         List<Book> list = new ArrayList<>();
         for (Book b : books) {
-            if (b.getAuthor().toLowerCase().contains(author.toLowerCase())) list.add(b);
+            if (b.getAuthor().toLowerCase().contains(author.toLowerCase())) {
+                list.add(b);
+            }
         }
         return list;
     }
 
-    // ---------------- Displays ----------------
+    // =========================================================
+    // Display Methods
+    // =========================================================
 
+    /** Displays all library items with their statuses. */
     public void showAllBooks() {
         if (books.isEmpty()) {
             System.out.println("No items in the library.");
@@ -258,27 +358,37 @@ public class LibraryService {
                     ? "Borrowed | Due: " + b.getDueDate()
                     : "Available";
 
-            if (b.isBorrowed() && b.getDueDate().isBefore(today)) status += " (OVERDUE)";
+            if (b.isBorrowed() && b.getDueDate().isBefore(today)) {
+                status += " (OVERDUE)";
+            }
 
-            System.out.println("ISBN: " + b.getIsbn() +
-                               " | Title: " + b.getTitle() +
-                               " | Author: " + b.getAuthor() +
-                               " | Type: " + b.getItemType() +
-                               " | " + status);
+            System.out.println(
+                    "ISBN: " + b.getIsbn() +
+                    " | Title: " + b.getTitle() +
+                    " | Author: " + b.getAuthor() +
+                    " | Type: " + b.getItemType() +
+                    " | " + status
+            );
         }
     }
 
+    /** Shows books currently borrowed by a specific user. */
     public void showBorrowedBooks(User user) {
         System.out.println("--- Your Items ---");
         for (Book b : books) {
-            if (b.isBorrowed() && user.getUserId().equals(b.getBorrowedByUserId())) {
-                System.out.println("ISBN: " + b.getIsbn() +
-                                   " | Title: " + b.getTitle() +
-                                   " | Due: " + b.getDueDate());
+            if (b.isBorrowed() &&
+                user.getUserId().equals(b.getBorrowedByUserId())) {
+
+                System.out.println(
+                        "ISBN: " + b.getIsbn() +
+                        " | Title: " + b.getTitle() +
+                        " | Due: " + b.getDueDate()
+                );
             }
         }
     }
 
+    /** Displays all overdue items in the library. */
     public void showOverdueBooks() {
         LocalDate today = LocalDate.now();
         System.out.println("--- Overdue Items ---");
@@ -290,41 +400,66 @@ public class LibraryService {
         }
     }
 
-    // ---------------- Utilities ----------------
+    // =========================================================
+    // Utility Methods
+    // =========================================================
 
+    /** Returns true if the user has at least one overdue book. */
     public boolean hasOverdueBooks(User user) {
         LocalDate today = LocalDate.now();
         for (Book b : books) {
             if (b.isBorrowed() &&
                 user.getUserId().equals(b.getBorrowedByUserId()) &&
-                b.getDueDate().isBefore(today)) return true;
+                b.getDueDate().isBefore(today)) {
+                return true;
+            }
         }
         return false;
     }
 
+    /** Counts all books currently borrowed by the user. */
     public int countBorrowedBooksByUser(User user) {
         int count = 0;
         for (Book b : books) {
-            if (b.isBorrowed() && user.getUserId().equals(b.getBorrowedByUserId())) count++;
+            if (b.isBorrowed() &&
+                user.getUserId().equals(b.getBorrowedByUserId())) {
+                count++;
+            }
         }
         return count;
     }
 
+    /**
+     * Attempts to unregister a user.
+     * Validation rules:
+     * <ul>
+     *     <li>Admin cannot be unregistered</li>
+     *     <li>User must have no outstanding fines</li>
+     *     <li>User must not have any borrowed items</li>
+     * </ul>
+     *
+     * @param admin     requesting admin
+     * @param target    user to remove
+     * @param allUsers  user list to modify
+     * @return true if successfully removed
+     */
     public boolean unregisterUser(User admin, User target, List<User> allUsers) {
         if (!admin.isAdmin()) return false;
         if (target.isAdmin()) return false;
         if (target.getFineBalance() > 0) return false;
 
         for (Book b : books) {
-            if (b.isBorrowed() && b.getBorrowedByUserId().equals(target.getUserId()))
+            if (b.isBorrowed() &&
+                b.getBorrowedByUserId().equals(target.getUserId())) {
                 return false;
+            }
         }
 
         return allUsers.remove(target);
     }
 
+    /** Returns an unmodifiable list of all items in the library. */
     public List<Book> getAllBooks() {
         return Collections.unmodifiableList(books);
     }
 }
-

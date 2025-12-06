@@ -2,6 +2,7 @@ package edu.univ.lms.repository;
 
 import edu.univ.lms.model.Book;
 import com.google.gson.*;
+
 import java.io.*;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
@@ -9,39 +10,75 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Repository for Book data persistence.
- * Handles saving and loading books from JSON files.
+ * Repository responsible for the persistence of {@link Book} objects.
+ * <p>
+ * Books are stored in a JSON file located under the <code>data/</code> directory.
+ * This class handles:
+ * <ul>
+ *     <li>Creating the data folder if it does not exist</li>
+ *     <li>Serializing books to JSON</li>
+ *     <li>Deserializing books from JSON</li>
+ *     <li>Restoring fine strategy objects after loading</li>
+ * </ul>
  */
 public class BookRepository {
 
-    private static final String ITEMS_FILE = "items.json";
+    /** Path to the JSON file storing all book entries. */
+    private static final String ITEMS_FILE = "data/items.json";
 
-    // ------- LocalDate Serializer -------
-    private static final JsonSerializer<LocalDate> localDateSerializer = new JsonSerializer<LocalDate>() {
-        @Override
-        public JsonElement serialize(LocalDate date, Type type, JsonSerializationContext context) {
-            return new JsonPrimitive(date.toString()); // "2025-01-01"
-        }
-    };
+    // ---------------------------------------------------------
+    // GSON Type Adapters for LocalDate
+    // ---------------------------------------------------------
 
-    // ------- LocalDate Deserializer -------
-    private static final JsonDeserializer<LocalDate> localDateDeserializer = new JsonDeserializer<LocalDate>() {
-        @Override
-        public LocalDate deserialize(JsonElement json, Type typeOfT,
-                                     JsonDeserializationContext context) throws JsonParseException {
-            return LocalDate.parse(json.getAsString());
-        }
-    };
+    /** Serializer for converting LocalDate → JSON String. */
+    private static final JsonSerializer<LocalDate> localDateSerializer =
+            (date, type, context) -> new JsonPrimitive(date.toString());
 
-    // ------- GSON with LocalDate support -------
+    /** Deserializer for converting JSON String → LocalDate. */
+    private static final JsonDeserializer<LocalDate> localDateDeserializer =
+            (json, type, context) -> LocalDate.parse(json.getAsString());
+
+    /** GSON instance configured with LocalDate support. */
     private static final Gson gson = new GsonBuilder()
             .setPrettyPrinting()
             .registerTypeAdapter(LocalDate.class, localDateSerializer)
             .registerTypeAdapter(LocalDate.class, localDateDeserializer)
             .create();
 
+    // ---------------------------------------------------------
+    // Constructor
+    // ---------------------------------------------------------
+
     /**
-     * Saves a list of books to JSON file.
+     * Creates a new repository and ensures the data folder exists.
+     */
+    public BookRepository() {
+        ensureDataFolder();
+    }
+
+    /**
+     * Ensures that the <code>data/</code> directory exists.
+     * This method is invoked once at initialization.
+     */
+    private void ensureDataFolder() {
+        File dir = new File("data");
+        if (!dir.exists()) {
+            if (dir.mkdirs()) {
+                System.out.println("Created data folder.");
+            } else {
+                System.out.println("Could not create data folder.");
+            }
+        }
+    }
+
+    // ---------------------------------------------------------
+    // Save
+    // ---------------------------------------------------------
+
+    /**
+     * Saves the list of books into a formatted JSON file.
+     *
+     * @param books the list of {@link Book} objects to save
      */
     public void saveBooks(List<Book> books) {
         try (Writer writer = new FileWriter(ITEMS_FILE)) {
@@ -52,37 +89,43 @@ public class BookRepository {
         }
     }
 
+    // ---------------------------------------------------------
+    // Load
+    // ---------------------------------------------------------
+
     /**
-     * Loads books from JSON file.
-     * @return List of books, or empty list if file doesn't exist
+     * Loads the list of books from the JSON file.
+     * <p>
+     * If the file does not exist or if an error occurs,
+     * an empty list is returned.
+     * <p>
+     * After loading, each book's fine strategy is reconstructed
+     * using {@link Book#rebuildFineStrategy()}.
+     *
+     * @return a list of books restored from storage
      */
     public List<Book> loadBooks() {
         try (Reader reader = new FileReader(ITEMS_FILE)) {
 
-            // Load as array (safer than TypeToken)
             Book[] array = gson.fromJson(reader, Book[].class);
-
-            List<Book> list = new ArrayList<Book>();
+            List<Book> list = new ArrayList<>();
 
             if (array != null) {
-                for (Book b : array) {
-
-                    // Rebuild strategy because fineStrategy:{} cannot be reconstructed
-                    b.rebuildFineStrategy();
-
-                    list.add(b);
+                for (Book book : array) {
+                    // Rebuild strategy object after JSON load
+                    book.rebuildFineStrategy();
+                    list.add(book);
                 }
             }
 
             return list;
 
         } catch (FileNotFoundException e) {
-            System.out.println("items.json not found, starting empty.");
-            return new ArrayList<Book>();
+            System.out.println("data/items.json not found, starting empty.");
+            return new ArrayList<>();
         } catch (Exception e) {
             System.out.println("Error loading items: " + e.getMessage());
-            return new ArrayList<Book>();
+            return new ArrayList<>();
         }
     }
 }
-
