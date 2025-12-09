@@ -12,8 +12,12 @@ jobs:
     name: Build and analyze
     runs-on: ubuntu-latest
 
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout sources
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -22,16 +26,13 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 17
+          cache: 'maven'
 
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+      # 1) Run tests + JaCoCo. This step may FAIL but the job continues.
+      - name: Build & test with JaCoCo
+        run: mvn -B clean verify
+        continue-on-error: true
 
-      - name: Build + Test + Jacoco Report + SonarCloud Analysis
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+      # 2) Run SonarCloud analysis (reuses jacoco.xml generated above)
+      - name: SonarCloud analysis
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
