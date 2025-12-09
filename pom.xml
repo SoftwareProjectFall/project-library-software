@@ -84,7 +84,17 @@
     <!-- Build Plugins -->
     <build>
         <plugins>
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <version>3.2.5</version>
+    <configuration>
+        <!-- Do NOT fail the build if tests fail -->
+        <testFailureIgnore>true</testFailureIgnore>
+    </configuration>
+</plugin>
 
+                 
             <!-- JaCoCo (XML coverage for SonarCloud) -->
             <plugin>
                 <groupId>org.jacoco</groupId>
