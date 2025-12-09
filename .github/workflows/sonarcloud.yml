@@ -17,17 +17,21 @@ jobs:
       pull-requests: read
 
     steps:
+
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 2. Set up Java 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
+      # 3. Cache Maven dependencies
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
@@ -36,14 +40,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-m2
 
-      # 1) Build, run tests, and generate JaCoCo report
-      #    If tests fail or error, DO NOT fail the job.
-      - name: Build & test with coverage
+      # 4. Build, Run Tests, Generate JaCoCo (do NOT fail if tests fail)
+      - name: Build & Test with Coverage
         run: mvn -B clean verify
         continue-on-error: true
 
-      # 2) Run SonarCloud analysis (tests are skipped here)
+      # 5. Run SonarCloud Scan (keys included here)
       - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
+        run: |
+          mvn -B \
+            -Dsonar.projectKey=SoftwareProjectFall_project-library-software \
+            -Dsonar.organization=softwareprojectfall \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=${SONAR_TOKEN} \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -DskipTests
