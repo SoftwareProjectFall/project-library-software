@@ -1,5 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -9,28 +10,22 @@
 
     <name>Library Management System</name>
 
-    <!-- ===================== -->
-    <!-- SonarCloud Coverage   -->
-    <!-- ===================== -->
+    <!-- =============== -->
+    <!-- SonarCloud Keys -->
+    <!-- =============== -->
     <properties>
-        <!-- Location of Jacoco XML report -->
+        <sonar.projectKey>SoftwareProjectFall_project-library-software</sonar.projectKey>
+        <sonar.organization>softwareprojectfall</sonar.organization>
+
+        <!-- Jacoco coverage XML path -->
         <sonar.coverage.jacoco.xmlReportPaths>
             target/site/jacoco/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
+
+        <!-- Required for JUnit 5 -->
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
     </properties>
-
-    <!-- Extra repositories -->
-    <repositories>
-        <repository>
-            <id>central</id>
-            <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-
-        <repository>
-            <id>sonatype-releases</id>
-            <url>https://oss.sonatype.org/content/repositories/releases/</url>
-        </repository>
-    </repositories>
 
     <!-- Dependencies -->
     <dependencies>
@@ -84,18 +79,18 @@
     <!-- Build Plugins -->
     <build>
         <plugins>
-<plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-surefire-plugin</artifactId>
-    <version>3.2.5</version>
-    <configuration>
-        <!-- Do NOT fail the build if tests fail -->
-        <testFailureIgnore>true</testFailureIgnore>
-    </configuration>
-</plugin>
 
-                 
-            <!-- JaCoCo (XML coverage for SonarCloud) -->
+            <!-- Do NOT fail build when tests fail (important for Sonar on private repos) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <testFailureIgnore>true</testFailureIgnore>
+                </configuration>
+            </plugin>
+
+            <!-- JaCoCo XML + HTML report -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -103,7 +98,7 @@
 
                 <executions>
 
-                    <!-- Attach JaCoCo before tests -->
+                    <!-- Run Jacoco FIRST -->
                     <execution>
                         <id>prepare-agent</id>
                         <goals>
@@ -111,10 +106,10 @@
                         </goals>
                     </execution>
 
-                    <!-- Generate XML & HTML reports -->
+                    <!-- Generate XML report BEFORE sonar -->
                     <execution>
                         <id>report</id>
-                        <phase>verify</phase>  <!-- Must run BEFORE sonar:sonar -->
+                        <phase>verify</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
