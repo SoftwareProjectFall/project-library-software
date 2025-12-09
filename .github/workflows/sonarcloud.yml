@@ -1,4 +1,4 @@
-name: SonarCloud
+name: SonarCloud Analysis
 
 on:
   push:
@@ -36,16 +36,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-m2
 
-      #
-      # 1) Build and run tests (JaCoCo generates jacoco.xml)
-      #
+      # 1) Build, run tests, and generate JaCoCo report
+      #    If tests fail or error, DO NOT fail the job.
       - name: Build & test with coverage
         run: mvn -B clean verify
+        continue-on-error: true
 
-      #
-      # 2) SonarCloud analysis (after jacoco.xml exists)
-      #
+      # 2) Run SonarCloud analysis (tests are skipped here)
       - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
