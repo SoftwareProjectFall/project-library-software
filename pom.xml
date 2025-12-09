@@ -9,39 +9,47 @@
 
     <name>Library Management System</name>
 
-    <!-- Extra repositories (in case some artifacts are not found) -->
+    <!-- ===================== -->
+    <!-- SonarCloud Coverage   -->
+    <!-- ===================== -->
+    <properties>
+        <!-- Location of Jacoco XML report -->
+        <sonar.coverage.jacoco.xmlReportPaths>
+            target/site/jacoco/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+    </properties>
+
+    <!-- Extra repositories -->
     <repositories>
-        <!-- Maven Central (default, but declared explicitly) -->
         <repository>
             <id>central</id>
             <url>https://repo.maven.apache.org/maven2</url>
         </repository>
 
-        <!-- Sonatype releases (fallback) -->
         <repository>
             <id>sonatype-releases</id>
             <url>https://oss.sonatype.org/content/repositories/releases/</url>
         </repository>
     </repositories>
 
-    <!-- All project dependencies go here -->
+    <!-- Dependencies -->
     <dependencies>
 
-        <!-- Jakarta Mail API (used for real email sending) -->
+        <!-- Jakarta Mail -->
         <dependency>
             <groupId>com.sun.mail</groupId>
             <artifactId>jakarta.mail</artifactId>
             <version>2.0.1</version>
         </dependency>
 
-        <!-- Gson (JSON serialization/deserialization) -->
+        <!-- Gson -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
         </dependency>
 
-        <!-- JUnit 5 (Unit Testing Framework) -->
+        <!-- JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -49,7 +57,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Mockito core (Mocking library) -->
+        <!-- Mockito -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
@@ -57,7 +65,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Mockito + JUnit 5 integration -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
@@ -65,7 +72,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Mockito inline (for mocking static methods like LocalDate.now) -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-inline</artifactId>
@@ -75,10 +81,11 @@
 
     </dependencies>
 
+    <!-- Build Plugins -->
     <build>
         <plugins>
 
-            <!-- JaCoCo (Code coverage generation) -->
+            <!-- JaCoCo (XML coverage for SonarCloud) -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -86,17 +93,18 @@
 
                 <executions>
 
-                    <!-- Attaches JaCoCo agent before running tests -->
+                    <!-- Attach JaCoCo before tests -->
                     <execution>
+                        <id>prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
 
-                    <!-- Generates the coverage report after tests -->
+                    <!-- Generate XML & HTML reports -->
                     <execution>
                         <id>report</id>
-                        <phase>test</phase>
+                        <phase>verify</phase>  <!-- Must run BEFORE sonar:sonar -->
                         <goals>
                             <goal>report</goal>
                         </goals>
