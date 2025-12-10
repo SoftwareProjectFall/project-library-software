@@ -17,7 +17,8 @@
         <!-- Your SonarCloud organization key -->
         <sonar.organization>softwareprojectfall</sonar.organization>
 
-             
+             <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+
         <!-- Your SonarCloud project key -->
         <sonar.projectKey>SoftwareProjectFall_project-library-software</sonar.projectKey>
 
