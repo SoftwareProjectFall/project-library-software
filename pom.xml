@@ -11,6 +11,9 @@
 
     <!-- SonarCloud configuration -->
     <properties>
+             
+  <sonar.organization>softwareprojectfall</sonar.organization>
+
         <!-- Your SonarCloud organization key -->
         <sonar.organization>softwareprojectfall</sonar.organization>
 
