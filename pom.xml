@@ -9,6 +9,23 @@
 
     <name>Library Management System</name>
 
+    <!-- SonarCloud configuration -->
+    <properties>
+        <!-- Your SonarCloud organization key -->
+        <sonar.organization>softwareprojectfall</sonar.organization>
+
+        <!-- Your SonarCloud project key -->
+        <sonar.projectKey>SoftwareProjectFall_project-library-software</sonar.projectKey>
+
+        <!-- SonarCloud server URL -->
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+
+        <!-- JaCoCo XML report used by SonarCloud for coverage -->
+        <sonar.coverage.jacoco.xmlReportPaths>
+            target/site/jacoco/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+    </properties>
+
     <!-- Extra repositories (in case some artifacts are not found) -->
     <repositories>
         <!-- Maven Central (default, but declared explicitly) -->
