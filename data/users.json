@@ -1,0 +1,12 @@
+[
+  {
+    "userId": "1",
+    "name": "Test User",
+    "username": "test",
+    "password": "pass",
+    "isAdmin": false,
+    "loggedIn": false,
+    "fineBalance": 0.0,
+    "email": "test@test.com"
+  }
+]
