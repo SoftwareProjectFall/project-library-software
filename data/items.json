@@ -1,0 +1,9 @@
+[
+  {
+    "isbn": "1",
+    "title": "Error Book",
+    "author": "Author",
+    "borrowed": false,
+    "fineType": "BOOK"
+  }
+]

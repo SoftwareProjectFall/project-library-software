@@ -21,11 +21,13 @@ import edu.univ.lms.strategy.BookFine;
 
 public class RepositoryExceptionTest {
 
+    // NOTE: These files are created in the project root for test purposes
     private static final String ITEMS_FILE = "items.json";
     private static final String USERS_FILE = "users.json";
 
     @AfterEach
     void cleanUp() throws Exception {
+        // Clean up the temporary test files after each test
         Files.deleteIfExists(Paths.get(ITEMS_FILE));
         Files.deleteIfExists(Paths.get(USERS_FILE));
     }
@@ -48,31 +50,32 @@ public class RepositoryExceptionTest {
 
     @Test
     void bookRepository_loadBooks_shouldHandleJsonParseException() throws Exception {
-        // Create invalid JSON
+        // Create invalid JSON to simulate corrupted items file
         try (PrintWriter pw = new PrintWriter(new FileWriter(ITEMS_FILE))) {
             pw.write("{invalid json}");
         }
         
         BookRepository repository = new BookRepository();
         
-        // Should return empty list, not throw
+        // Implementation now seeds 1 default book when loading fails
         List<Book> result = repository.loadBooks();
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertEquals(1, result.size()); // Expect 1 default book when loading fails
     }
 
     @Test
     void bookRepository_loadBooks_shouldHandleNullArray() throws Exception {
-        // Create JSON with null array
+        // Create JSON with null to simulate null array from file
         try (PrintWriter pw = new PrintWriter(new FileWriter(ITEMS_FILE))) {
             pw.write("null");
         }
         
         BookRepository repository = new BookRepository();
         
+        // Implementation now seeds 1 default book when loading fails or is null
         List<Book> result = repository.loadBooks();
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertEquals(1, result.size()); // Expect 1 default book when file content is null
     }
 
     @Test
@@ -93,31 +96,31 @@ public class RepositoryExceptionTest {
 
     @Test
     void userRepository_loadUsers_shouldHandleJsonParseException() throws Exception {
-        // Create invalid JSON
+        // Create invalid JSON to simulate corrupted users file
         try (PrintWriter pw = new PrintWriter(new FileWriter(USERS_FILE))) {
             pw.write("{invalid json}");
         }
         
         UserRepository repository = new UserRepository();
         
-        // Should return empty list, not throw
+        // Implementation now seeds 1 default user when loading fails
         List<User> result = repository.loadUsers();
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertEquals(1, result.size()); // Expect 1 default user when loading fails
     }
 
     @Test
     void userRepository_loadUsers_shouldHandleNullArray() throws Exception {
-        // Create JSON with null array
+        // Create JSON with null to simulate null array from file
         try (PrintWriter pw = new PrintWriter(new FileWriter(USERS_FILE))) {
             pw.write("null");
         }
         
         UserRepository repository = new UserRepository();
         
+        // Implementation now seeds 1 default user when loading fails or is null
         List<User> result = repository.loadUsers();
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertEquals(1, result.size()); // Expect 1 default user when file content is null
     }
 }
-

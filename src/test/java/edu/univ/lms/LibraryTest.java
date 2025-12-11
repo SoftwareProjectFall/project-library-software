@@ -20,18 +20,18 @@ import edu.univ.lms.strategy.BookFine;
 import edu.univ.lms.strategy.DvdFine;
 
 /**
-  Unit tests for the LibraryService class.
-  Covers:
-   - Admin actions (add / remove / update)
-   - Borrow / return logic (books & DVDs, fines, restrictions)
-   - Search helpers (by title / author / ISBN)
-   - Display methods (showAllBooks / showBorrowedBooks / showOverdueBooks)
-   - Unregister user rules
-   - restoreIsbnCounter logic
+ * Unit tests for the LibraryService class.
+ * Covers:
+ *  - Admin actions (add / remove / update)
+ *  - Borrow / return logic (books & DVDs, fines, restrictions)
+ *  - Search helpers (by title / author / ISBN)
+ *  - Display methods (showAllBooks / showBorrowedBooks / showOverdueBooks)
+ *  - Unregister user rules
+ *  - restoreIsbnCounter logic
  */
 public class LibraryTest {
 
-    // Helper methods
+    // ===== Helper methods =====
 
     // Create an admin user who is already logged in
     private User createLoggedInAdmin() {
@@ -57,7 +57,7 @@ public class LibraryTest {
         return new Book(isbn, title, "Director", new DvdFine());
     }
 
-    // Admin actions: add / remove / update
+    // ===== Admin actions: add / remove / update =====
 
     @Test
     void addBook_shouldAllowLoggedInAdminAndAssignIsbn() {
@@ -102,7 +102,7 @@ public class LibraryTest {
         assertEquals(0, library.getAllBooks().size());
     }
 
-    // NEW: user not admin / not logged in → should fail
+    // User is not admin → should fail
     @Test
     void removeBook_shouldRejectWhenUserIsNotAdminOrNotLoggedIn() {
         LibraryService library = new LibraryService();
@@ -120,7 +120,7 @@ public class LibraryTest {
         assertEquals(1, library.getAllBooks().size());
     }
 
-    // NEW: isbn null or blank → guard if (isbn == null || isbn.isBlank())
+    // ISBN null or blank → guard in removeBook
     @Test
     void removeBook_shouldRejectWhenIsbnIsNullOrBlank() {
         LibraryService library = new LibraryService();
@@ -138,7 +138,7 @@ public class LibraryTest {
         assertEquals(1, library.getAllBooks().size());
     }
 
-    // NEW: item not found → reach "Item not found." branch
+    // Item not found branch
     @Test
     void removeBook_shouldReturnFalseWhenItemNotFound() {
         LibraryService library = new LibraryService();
@@ -152,6 +152,8 @@ public class LibraryTest {
         assertFalse(result);
         assertEquals(1, library.getAllBooks().size());
     }
+
+    // ===== Return validations =====
 
     @Test
     void returnBook_shouldRejectWhenUserNotLoggedIn() {
@@ -204,6 +206,8 @@ public class LibraryTest {
         // original book still available (not borrowed)
         assertFalse(book.isBorrowed());
     }
+
+    // ===== Borrow validations =====
 
     @Test
     void borrowBook_shouldRejectWhenUserNotLoggedIn() {
@@ -268,7 +272,7 @@ public class LibraryTest {
         Book book = createBook("101", "Java");
         library.setItems(new ArrayList<>(Arrays.asList(book)));
 
-        boolean result = library.borrowBook(user, "999"); // not existing ISBN
+        boolean result = library.borrowBook(user, "999"); // non-existing ISBN
 
         assertFalse(result);
         assertFalse(book.isBorrowed());
@@ -335,7 +339,7 @@ public class LibraryTest {
         assertFalse(result);
     }
 
-    // Borrow logic
+    // ===== Borrow logic with dates =====
 
     @Test
     void borrowBook_shouldBorrowNormalBookFor28Days() {
@@ -427,7 +431,7 @@ public class LibraryTest {
         assertFalse(book.isBorrowed());
     }
 
-    // Return logic
+    // ===== Return logic (on time / late) =====
 
     @Test
     void returnBook_onTimeShouldNotAddFine() {
@@ -444,7 +448,7 @@ public class LibraryTest {
             mocked.when(LocalDate::now).thenReturn(borrowDay);
             library.borrowBook(user, "101");
 
-            // Now "today" = due date (not late)
+            // Today = due date (not late)
             mocked.when(LocalDate::now).thenReturn(dueDay);
 
             boolean result = library.returnBook(user, "101");
@@ -460,27 +464,28 @@ public class LibraryTest {
         LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
         Book book = createBook("101", "Java Book");
+
+        // Use real "today" and make due date in the past
+        LocalDate today = LocalDate.now();
+        LocalDate borrowDay = today.minusDays(30);     // borrowed 30 days ago
+        LocalDate dueDay = borrowDay.plusDays(28);     // due 2 days ago (late by 2)
+
+        book.setBorrowed(true);
+        book.setBorrowedByUserId(user.getUserId());
+        book.setBorrowDate(borrowDay);
+        book.setDueDate(dueDay);
+
         library.setItems(new ArrayList<>(Arrays.asList(book)));
 
-        LocalDate borrowDay = LocalDate.of(2025, 1, 1);
-        LocalDate dueDay = borrowDay.plusDays(28);
-        LocalDate lateDay = dueDay.plusDays(5); // 5 days late
+        boolean result = library.returnBook(user, "101");
 
-        try (MockedStatic<LocalDate> mocked = Mockito.mockStatic(LocalDate.class)) {
-            mocked.when(LocalDate::now).thenReturn(borrowDay);
-            library.borrowBook(user, "101");
-
-            mocked.when(LocalDate::now).thenReturn(lateDay);
-            boolean result = library.returnBook(user, "101");
-
-            assertTrue(result);
-            // BookFine = 1 NIS per day → 5 NIS
-            assertEquals(5.0, user.getFineBalance());
-            assertFalse(book.isBorrowed());
-        }
+        assertTrue(result);
+        // BookFine = 1 NIS per day → 2 days late → 2 NIS
+        assertEquals(2.0, user.getFineBalance());
+        assertFalse(book.isBorrowed());
     }
 
-    // Search + helper methods
+    // ===== Search + helper methods =====
 
     @Test
     void searchBooksByTitle_shouldReturnMatchingBooks() {
@@ -548,7 +553,7 @@ public class LibraryTest {
         assertTrue(library.hasOverdueBooks(user));
     }
 
-    // Display methods (showAllBooks / showBorrowedBooks / showOverdueBooks)
+    // ===== Display methods (showAllBooks / showBorrowedBooks / showOverdueBooks) =====
 
     @Test
     void showAllBooks_shouldPrintAvailableAndOverdueItems() {
@@ -674,7 +679,7 @@ public class LibraryTest {
                 "Borrowed book for another user must NOT be shown");
     }
 
-    // restoreIsbnCounter + unregister user logic
+    // ===== restoreIsbnCounter + unregister user logic =====
 
     @Test
     void restoreIsbnCounter_shouldSetCounterToMaxExistingIsbn() {
@@ -684,7 +689,7 @@ public class LibraryTest {
         // Book with numeric ISBN (valid)
         Book b1 = createBook("150", "Old A");
 
-        // Book with NON-numeric ISBN → this should exercise the catch block
+        // Book with NON-numeric ISBN → should be ignored by the counter
         Book b2 = createBook("xyz", "Invalid ISBN");
 
         // Book with highest valid ISBN
@@ -746,60 +751,61 @@ public class LibraryTest {
     void returnBook_forceFullLateBranchCoverage() {
         LibraryService library = new LibraryService();
         User user = createLoggedInUser("9");
-
         Book book = createBook("500", "Late Testing Book");
-        library.setItems(new ArrayList<>(Arrays.asList(book)));
 
-        LocalDate borrowDay = LocalDate.of(2025, 1, 1);
-        LocalDate dueDay = borrowDay.plusDays(28);
-        LocalDate lateDay = dueDay.plusDays(4); // 4 days late
+        LocalDate today = LocalDate.now();
+        LocalDate borrowDay = today.minusDays(28 + 4);  // borrowed 32 days ago
+        LocalDate dueDay = borrowDay.plusDays(28);      // due 4 days ago
+
+        book.setBorrowed(true);
+        book.setBorrowedByUserId(user.getUserId());
+        book.setBorrowDate(borrowDay);
+        book.setDueDate(dueDay);
+
+        library.setItems(new ArrayList<>(Arrays.asList(book)));
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PrintStream originalOut = System.out;
         System.setOut(new PrintStream(out));
 
-        try (MockedStatic<LocalDate> mocked = Mockito.mockStatic(LocalDate.class)) {
-
-            mocked.when(LocalDate::now).thenReturn(borrowDay);
-            assertTrue(library.borrowBook(user, "500"));
-
-            mocked.when(LocalDate::now).thenReturn(lateDay);
+        try {
             boolean result = library.returnBook(user, "500");
             assertTrue(result);
-
         } finally {
             System.setOut(originalOut);
         }
 
         String console = out.toString();
+
+        // 4 days late → 4 NIS fine with BookFine
         assertTrue(console.contains("Late return! Overdue by 4 days. Fine: 4.0 NIS"));
         assertEquals(4.0, user.getFineBalance());
     }
+
 
     @Test
     void returnBook_lateShouldCalculateFineAndPrintMessage() {
         LibraryService library = new LibraryService();
         User user = createLoggedInUser("2");
         Book book = createBook("101", "Late Book");
-        library.setItems(new ArrayList<>(Arrays.asList(book)));
 
-        LocalDate borrowDay = LocalDate.of(2025, 1, 1);
-        LocalDate dueDay = borrowDay.plusDays(28);
-        LocalDate lateDay = dueDay.plusDays(3); // 3 days late
+        LocalDate today = LocalDate.now();
+        LocalDate borrowDay = today.minusDays(28 + 3);  // borrowed 31 days ago
+        LocalDate dueDay = borrowDay.plusDays(28);      // due 3 days ago
+
+        book.setBorrowed(true);
+        book.setBorrowedByUserId(user.getUserId());
+        book.setBorrowDate(borrowDay);
+        book.setDueDate(dueDay);
+
+        library.setItems(new ArrayList<>(Arrays.asList(book)));
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PrintStream original = System.out;
         System.setOut(new PrintStream(out));
 
-        try (MockedStatic<LocalDate> mocked = Mockito.mockStatic(LocalDate.class)) {
-            // borrow on borrowDay
-            mocked.when(LocalDate::now).thenReturn(borrowDay);
-            library.borrowBook(user, "101");
-
-            // return on lateDay (after due date)
-            mocked.when(LocalDate::now).thenReturn(lateDay);
+        try {
             boolean result = library.returnBook(user, "101");
-
             assertTrue(result);
         } finally {
             System.setOut(original);
@@ -807,13 +813,14 @@ public class LibraryTest {
 
         String console = out.toString();
 
-        // 3 days overdue → fine = 3.0 with BookFine (1 NIS per day)
+        // 3 days late → 3 NIS fine
         assertEquals(3.0, user.getFineBalance());
         assertTrue(
-                console.contains("Late return! Overdue by 3 days. Fine: 3.0 NIS"),
-                "Late-return message must be printed with days and fine"
+            console.contains("Late return! Overdue by 3 days. Fine: 3.0 NIS"),
+            "Late-return message must be printed with days and fine"
         );
     }
+
 
     @Test
     void unregisterUser_shouldRejectIfTargetHasFines() {

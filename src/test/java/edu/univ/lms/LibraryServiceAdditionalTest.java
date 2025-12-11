@@ -107,6 +107,16 @@ public class LibraryServiceAdditionalTest {
         }
     }
 
+    // NOTE:
+    // We no longer mock LocalDate.now() here because static mocking was causing
+    // LocalDate.now() to become NULL inside LibraryService.returnBook(), which
+    // triggered a NullPointerException when calculating overdue days.
+    // Instead, we manually simulate a borrowed DVD by setting:
+    // - borrowed = true
+    // - borrowedByUserId = the correct user
+    // - dueDate = today.minusDays(X)
+    // This allows returnBook() to calculate the overdue fine normally,
+    // without mocking LocalDate.now(), and avoids breaking internal logic.
     @Test
     void returnBook_shouldCalculateFineForDvd() {
         LibraryService library = new LibraryService();
@@ -114,23 +124,25 @@ public class LibraryServiceAdditionalTest {
         Book dvd = new Book("201", "Movie", "Director", new DvdFine());
         library.setItems(new ArrayList<>(Arrays.asList(dvd)));
 
-        LocalDate borrowDay = LocalDate.of(2025, 1, 1);
-        LocalDate dueDay = borrowDay.plusDays(7);
-        LocalDate lateDay = dueDay.plusDays(2); // 2 days late
+        LocalDate today = LocalDate.now();
+        // simulate an already-borrowed DVD that is 2 days overdue
+        dvd.setBorrowed(true);
+        dvd.setBorrowedByUserId(user.getUserId());
+        dvd.setDueDate(today.minusDays(2));
 
-        try (MockedStatic<LocalDate> mocked = Mockito.mockStatic(LocalDate.class)) {
-            mocked.when(LocalDate::now).thenReturn(borrowDay);
-            library.borrowBook(user, "201");
+        boolean result = library.returnBook(user, "201");
 
-            mocked.when(LocalDate::now).thenReturn(lateDay);
-            boolean result = library.returnBook(user, "201");
-
-            assertTrue(result);
-            // DvdFine = 20 NIS per day → 2 * 20 = 40 NIS
-            assertEquals(40.0, user.getFineBalance());
-        }
+        assertTrue(result);
+        // DvdFine = 20 NIS per day → 2 * 20 = 40 NIS
+        assertEquals(40.0, user.getFineBalance());
     }
 
+    // NOTE:
+    // This test avoids static mocking of LocalDate.now() because mocking the entire
+    // LocalDate class was causing returnBook() to receive a NULL date internally.
+    // To prevent NPE and still test fine calculation, we manually simulate an
+    // overdue journal by setting its due date to (today - X days) and marking it
+    // as borrowed by the user. Then returnBook() computes the fine correctly.
     @Test
     void returnBook_shouldCalculateFineForJournal() {
         LibraryService library = new LibraryService();
@@ -138,21 +150,17 @@ public class LibraryServiceAdditionalTest {
         Book journal = new Book("301", "Journal", "Editor", new JournalFine());
         library.setItems(new ArrayList<>(Arrays.asList(journal)));
 
-        LocalDate borrowDay = LocalDate.of(2025, 1, 1);
-        LocalDate dueDay = borrowDay.plusDays(28);
-        LocalDate lateDay = dueDay.plusDays(4); // 4 days late
+        LocalDate today = LocalDate.now();
+        // simulate an already-borrowed Journal that is 4 days overdue
+        journal.setBorrowed(true);
+        journal.setBorrowedByUserId(user.getUserId());
+        journal.setDueDate(today.minusDays(4));
 
-        try (MockedStatic<LocalDate> mocked = Mockito.mockStatic(LocalDate.class)) {
-            mocked.when(LocalDate::now).thenReturn(borrowDay);
-            library.borrowBook(user, "301");
+        boolean result = library.returnBook(user, "301");
 
-            mocked.when(LocalDate::now).thenReturn(lateDay);
-            boolean result = library.returnBook(user, "301");
-
-            assertTrue(result);
-            // JournalFine = 0.5 NIS per day → 4 * 0.5 = 2.0 NIS
-            assertEquals(2.0, user.getFineBalance());
-        }
+        assertTrue(result);
+        // JournalFine = 0.5 NIS per day → 4 * 0.5 = 2.0 NIS
+        assertEquals(2.0, user.getFineBalance());
     }
 
     @Test
@@ -207,4 +215,3 @@ public class LibraryServiceAdditionalTest {
         assertDoesNotThrow(() -> library.showBorrowedBooks(user));
     }
 }
-
