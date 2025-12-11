@@ -30,15 +30,24 @@ public class BookRepository {
     // GSON Type Adapters for LocalDate
     // ---------------------------------------------------------
 
-    /** Serializer for converting LocalDate → JSON String. */
+    /**
+     * Serializer converting a {@link LocalDate} instance into
+     * its ISO-8601 string representation in JSON.
+     */
     private static final JsonSerializer<LocalDate> localDateSerializer =
             (date, type, context) -> new JsonPrimitive(date.toString());
 
-    /** Deserializer for converting JSON String → LocalDate. */
+    /**
+     * Deserializer converting an ISO-8601 date string in JSON
+     * back into a {@link LocalDate} instance.
+     */
     private static final JsonDeserializer<LocalDate> localDateDeserializer =
             (json, type, context) -> LocalDate.parse(json.getAsString());
 
-    /** GSON instance configured with LocalDate support. */
+    /**
+     * GSON instance configured for pretty-print JSON output and
+     * serialization/deserialization of {@link LocalDate}.
+     */
     private static final Gson gson = new GsonBuilder()
             .setPrettyPrinting()
             .registerTypeAdapter(LocalDate.class, localDateSerializer)
@@ -50,7 +59,8 @@ public class BookRepository {
     // ---------------------------------------------------------
 
     /**
-     * Creates a new repository and ensures the data folder exists.
+     * Creates a new repository and ensures the <code>data/</code> folder exists
+     * so that book files can be safely stored.
      */
     public BookRepository() {
         ensureDataFolder();
@@ -58,7 +68,8 @@ public class BookRepository {
 
     /**
      * Ensures that the <code>data/</code> directory exists.
-     * This method is invoked once at initialization.
+     * If it is missing, attempts to create it.
+     * Prints feedback to the console indicating success or failure.
      */
     private void ensureDataFolder() {
         File dir = new File("data");
@@ -77,6 +88,9 @@ public class BookRepository {
 
     /**
      * Saves the list of books into a formatted JSON file.
+     * <p>
+     * Any existing file will be overwritten. Errors are caught and printed
+     * to the console without interrupting program flow.
      *
      * @param books the list of {@link Book} objects to save
      */
@@ -96,13 +110,14 @@ public class BookRepository {
     /**
      * Loads the list of books from the JSON file.
      * <p>
-     * If the file does not exist or if an error occurs,
-     * an empty list is returned.
+     * If the file does not exist or if an error occurs while reading or parsing,
+     * an empty list is returned to maintain application stability.
      * <p>
-     * After loading, each book's fine strategy is reconstructed
-     * using {@link Book#rebuildFineStrategy()}.
+     * After deserialization, each book's fine strategy is restored using
+     * {@link Book#rebuildFineStrategy()}, because strategy objects are transient
+     * and not stored directly in the JSON.
      *
-     * @return a list of books restored from storage
+     * @return a list of fully reconstructed {@link Book} objects
      */
     public List<Book> loadBooks() {
         try (Reader reader = new FileReader(ITEMS_FILE)) {

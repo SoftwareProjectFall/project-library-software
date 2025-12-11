@@ -99,30 +99,65 @@ public class Book {
         return fineType;
     }
 
+    /**
+     * Returns the ISBN or internal identifier of this item.
+     *
+     * @return item ISBN
+     */
     public String getIsbn() {
         return isbn;
     }
 
+    /**
+     * Returns the title of this item.
+     *
+     * @return item title
+     */
     public String getTitle() {
         return title;
     }
 
+    /**
+     * Returns the author or creator of this item.
+     *
+     * @return item author
+     */
     public String getAuthor() {
         return author;
     }
 
+    /**
+     * Indicates whether this item is currently borrowed.
+     *
+     * @return {@code true} if borrowed, {@code false} otherwise
+     */
     public boolean isBorrowed() {
         return borrowed;
     }
 
+    /**
+     * Returns the user ID of the borrower, if any.
+     *
+     * @return borrowing user ID, or {@code null} if not borrowed
+     */
     public String getBorrowedByUserId() {
         return borrowedByUserId;
     }
 
+    /**
+     * Returns the date on which this item was borrowed.
+     *
+     * @return borrow date, or {@code null} if not borrowed
+     */
     public LocalDate getBorrowDate() {
         return borrowDate;
     }
 
+    /**
+     * Returns the due date by which this item should be returned.
+     *
+     * @return due date, or {@code null} if not borrowed
+     */
     public LocalDate getDueDate() {
         return dueDate;
     }
@@ -131,34 +166,74 @@ public class Book {
     // Setters
     // ---------------------------------------------------------
 
+    /**
+     * Sets the logical fine type used to rebuild the fine strategy.
+     *
+     * @param fineType fine type label (e.g. "BOOK", "DVD", "JOURNAL")
+     */
     public void setFineType(String fineType) {
         this.fineType = fineType;
     }
 
+    /**
+     * Updates the title of this item.
+     *
+     * @param title new item title
+     */
     public void setTitle(String title) {
         this.title = title;
     }
 
+    /**
+     * Updates the author or creator of this item.
+     *
+     * @param author new author name
+     */
     public void setAuthor(String author) {
         this.author = author;
     }
 
+    /**
+     * Marks this item as borrowed or available.
+     *
+     * @param borrowed {@code true} if borrowed, {@code false} if available
+     */
     public void setBorrowed(boolean borrowed) {
         this.borrowed = borrowed;
     }
 
+    /**
+     * Sets the user ID of the borrower for this item.
+     *
+     * @param borrowedByUserId ID of the user who borrowed the item
+     */
     public void setBorrowedByUserId(String borrowedByUserId) {
         this.borrowedByUserId = borrowedByUserId;
     }
 
+    /**
+     * Sets the date on which the item was borrowed.
+     *
+     * @param borrowDate borrow date
+     */
     public void setBorrowDate(LocalDate borrowDate) {
         this.borrowDate = borrowDate;
     }
 
+    /**
+     * Sets the due date for returning this item.
+     *
+     * @param dueDate due date
+     */
     public void setDueDate(LocalDate dueDate) {
         this.dueDate = dueDate;
     }
 
+    /**
+     * Updates the ISBN or internal identifier of this item.
+     *
+     * @param isbn new ISBN value
+     */
     public void setIsbn(String isbn) {
         this.isbn = isbn;
     }
@@ -218,6 +293,12 @@ public class Book {
     // toString
     // ---------------------------------------------------------
 
+    /**
+     * Returns a human-readable representation of this item,
+     * including its identifier, bibliographic data, type, and status.
+     *
+     * @return textual representation of this item
+     */
     @Override
     public String toString() {
         String status = borrowed

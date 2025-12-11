@@ -13,9 +13,9 @@ import java.util.Map;
 /**
  * Service responsible for sending overdue reminders to users.
  * <p>
- * This class uses the Observer Pattern so that multiple notification
- * channels can be plugged in (e.g., email, SMS, console simulation).
- * Observers are notified whenever a user has one or more overdue items.
+ * This class implements the Observer Pattern, allowing multiple notification
+ * channels (email, console printing, SMS, etc.) to subscribe and receive
+ * automatically generated reminder messages.
  */
 public class ReminderService {
 
@@ -27,7 +27,14 @@ public class ReminderService {
     // ---------------------------------------------------------
 
     /**
-     * Registers a new observer (e.g. EmailNotifier, RealEmailNotifier).
+     * Registers a new observer to receive overdue notifications.
+     * <p>
+     * Observers may include:
+     * <ul>
+     *     <li>EmailNotifier (console simulation)</li>
+     *     <li>RealEmailNotifier (SMTP-based emails)</li>
+     *     <li>Any other notification implementation</li>
+     * </ul>
      *
      * @param observer observer to add
      */
@@ -36,7 +43,7 @@ public class ReminderService {
     }
 
     /**
-     * Unregisters an existing observer.
+     * Removes a previously registered observer.
      *
      * @param observer observer to remove
      */
@@ -49,17 +56,23 @@ public class ReminderService {
     // ---------------------------------------------------------
 
     /**
-     * Sends reminders to all users who currently have overdue items.
+     * Sends reminder messages to all users who currently have at least one overdue item.
      * <p>
-     * For each user with at least one overdue item, this method builds
-     * a message of the form:
+     * Workflow:
+     * <ol>
+     *     <li>Scan all books in the library.</li>
+     *     <li>Identify which items are overdue.</li>
+     *     <li>Count overdue items per user.</li>
+     *     <li>Generate a user-friendly message.</li>
+     *     <li>Notify all registered observers (email, console, etc.).</li>
+     * </ol>
+     * <p>
+     * Example message sent to observers:
      * <br>
-     * <code>"You have n overdue item(s)."</code>
-     * <br>
-     * and forwards it to every registered {@link Observer}.
+     * <code>"You have 2 overdue item(s)."</code>
      *
      * @param libraryService library service providing access to all books
-     * @param allUsers       list of all registered users
+     * @param allUsers       list of all registered users to notify
      */
     public void sendOverdueReminders(LibraryService libraryService, List<User> allUsers) {
         LocalDate today = LocalDate.now();
@@ -78,7 +91,7 @@ public class ReminderService {
             }
         }
 
-        // Step 2 — Notify each user that has at least one overdue item
+        // Step 2 — Notify each affected user
         for (User user : allUsers) {
             if (overdueCount.containsKey(user.getUserId())) {
                 int count = overdueCount.get(user.getUserId());

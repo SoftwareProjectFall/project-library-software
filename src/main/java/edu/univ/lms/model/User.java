@@ -50,11 +50,11 @@ public class User {
      * Creates a new user with the given attributes.
      *
      * @param userId   unique user identifier
-     * @param name     full name
-     * @param username login username
-     * @param password login password
-     * @param isAdmin  {@code true} if the user is an administrator
-     * @param email    email address for notifications
+     * @param name     full name of the user
+     * @param username username used for login
+     * @param password password used for login (plain text)
+     * @param isAdmin  true if the user is an administrator
+     * @param email    email used for notifications
      */
     public User(String userId, String name, String username, String password, boolean isAdmin, String email) {
         this.userId = userId;
@@ -75,30 +75,67 @@ public class User {
     // Getters & Setters
     // ---------------------------------------------------------
 
+    /**
+     * Returns the unique ID of the user.
+     *
+     * @return user identifier
+     */
     public String getUserId() {
         return userId;
     }
 
+    /**
+     * Updates the unique identifier of the user.
+     *
+     * @param userId new user ID
+     */
     public void setUserId(String userId) {
         this.userId = userId;
     }
 
+    /**
+     * Returns the full name of the user.
+     *
+     * @return user's name
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Updates the user's full name.
+     *
+     * @param name new full name
+     */
     public void setName(String name) {
         this.name = name;
     }
 
+    /**
+     * Returns the username used for login.
+     *
+     * @return login username
+     */
     public String getUsername() {
         return username;
     }
 
+    /**
+     * Updates the username used for login.
+     *
+     * @param username new login username
+     */
     public void setUsername(String username) {
         this.username = username;
     }
 
+    /**
+     * Returns the stored password.
+     * <p>
+     * Note: visible only for demonstration; real systems must hide or hash passwords.
+     *
+     * @return password in plain text
+     */
     public String getPassword() {
         return password;
     }
@@ -114,22 +151,47 @@ public class User {
         this.password = password;
     }
 
+    /**
+     * Checks whether this user has administrative privileges.
+     *
+     * @return true if admin, false otherwise
+     */
     public boolean isAdmin() {
         return isAdmin;
     }
 
+    /**
+     * Updates the user's administrative role.
+     *
+     * @param admin true to make user an admin
+     */
     public void setAdmin(boolean admin) {
         isAdmin = admin;
     }
 
+    /**
+     * Returns the email associated with the user.
+     *
+     * @return user's email address
+     */
     public String getEmail() {
         return email;
     }
 
+    /**
+     * Updates the email address used for notifications.
+     *
+     * @param email new email address
+     */
     public void setEmail(String email) {
         this.email = email;
     }
 
+    /**
+     * Returns the user's outstanding fine balance.
+     *
+     * @return fine balance in NIS
+     */
     public double getFineBalance() {
         return fineBalance;
     }
@@ -151,9 +213,10 @@ public class User {
 
     /**
      * Attempts to pay part or all of the user's fine balance.
+     * Provides user feedback through console messages.
      *
      * @param amount amount to pay
-     * @return {@code true} if the payment was accepted, {@code false} otherwise
+     * @return true if payment was processed, false otherwise
      */
     public boolean payFine(double amount) {
         if (amount <= 0) {
@@ -182,23 +245,23 @@ public class User {
     // ---------------------------------------------------------
 
     /**
-     * Checks whether the provided credentials match this user's credentials.
+     * Compares the provided credentials with this user's stored credentials.
      *
      * @param username username to check
      * @param password password to check
-     * @return {@code true} if credentials match, {@code false} otherwise
+     * @return true if credentials match, false otherwise
      */
     public boolean authenticate(String username, String password) {
         return this.username.equals(username) && this.password.equals(password);
     }
 
     /**
-     * Attempts to log in the user with the given credentials.
-     * Prints basic feedback to the console.
+     * Attempts to log in the user with given credentials.
+     * Displays feedback indicating the login result.
      *
-     * @param username username entered by the user
-     * @param password password entered by the user
-     * @return {@code true} if login is successful, {@code false} otherwise
+     * @param username username entered
+     * @param password password entered
+     * @return true if login was successful, false otherwise
      */
     public boolean login(String username, String password) {
         if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
@@ -223,7 +286,7 @@ public class User {
     }
 
     /**
-     * Logs the user out if they are currently logged in.
+     * Logs the user out and prints a confirmation message.
      */
     public void logout() {
         if (loggedIn) {
@@ -237,7 +300,7 @@ public class User {
     /**
      * Indicates whether the user is currently logged in.
      *
-     * @return {@code true} if logged in, {@code false} otherwise
+     * @return true if logged in, false otherwise
      */
     public boolean isLoggedIn() {
         return loggedIn;
@@ -247,6 +310,12 @@ public class User {
     // toString
     // ---------------------------------------------------------
 
+    /**
+     * Returns a text representation of the user, including identifiers,
+     * login status, role, and fine balance.
+     *
+     * @return string representation of the user
+     */
     @Override
     public String toString() {
         return "User{" +

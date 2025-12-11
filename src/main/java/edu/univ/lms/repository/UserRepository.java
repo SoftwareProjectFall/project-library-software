@@ -25,15 +25,17 @@ public class UserRepository {
             .create();
 
     /**
-     * Creates a new UserRepository and ensures that the data folder exists.
+     * Constructs a new {@code UserRepository} and ensures the data directory exists.
      */
     public UserRepository() {
         ensureDataFolder();
     }
 
     /**
-     * Ensures that the <code>data/</code> folder exists
-     * before any file operations take place.
+     * Ensures that the <code>data/</code> directory exists before any file access.
+     * <p>
+     * Creates the directory if it does not already exist.
+     * Prints feedback indicating whether creation succeeded or failed.
      */
     private void ensureDataFolder() {
         File dir = new File("data");
@@ -51,9 +53,12 @@ public class UserRepository {
     // ---------------------------------------------------------
 
     /**
-     * Saves the provided list of users to the JSON file.
+     * Saves the provided list of users to a JSON file.
+     * <p>
+     * This operation overwrites any existing user file. In case of errors,
+     * the exception message is printed, and the application continues running.
      *
-     * @param users list of {@link User} objects to be stored
+     * @param users list of {@link User} objects to be serialized
      */
     public void saveUsers(List<User> users) {
         try (Writer writer = new FileWriter(USERS_FILE)) {
@@ -69,11 +74,18 @@ public class UserRepository {
     // ---------------------------------------------------------
 
     /**
-     * Loads all users from the JSON file.
+     * Loads all user accounts stored in the JSON file.
      * <p>
-     * If the file is missing or corrupted, this method returns an empty list.
+     * This method performs several safety checks:
+     * <ul>
+     *     <li>If the file does not exist, an empty list is returned.</li>
+     *     <li>If deserialization fails, an empty list is returned.</li>
+     * </ul>
+     * <p>
+     * The method prints diagnostic information, including the absolute
+     * file path being accessed, which helps with debugging.
      *
-     * @return list of restored users
+     * @return list of restored {@link User} objects; never {@code null}
      */
     public List<User> loadUsers() {
         File file = new File(USERS_FILE);

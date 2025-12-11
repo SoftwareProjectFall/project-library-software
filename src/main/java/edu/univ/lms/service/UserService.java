@@ -8,8 +8,15 @@ import java.util.List;
 /**
  * Service layer responsible for user-related business logic.
  * <p>
- * This includes user registration, authentication, and persistence
- * through the {@link UserRepository}.
+ * This includes:
+ * <ul>
+ *     <li>User registration</li>
+ *     <li>User authentication</li>
+ *     <li>Saving and loading users via {@link UserRepository}</li>
+ * </ul>
+ * <p>
+ * The service does not manage borrowing, fines, or reminders—those
+ * responsibilities belong to other service classes.
  */
 public class UserService {
 
@@ -17,7 +24,7 @@ public class UserService {
     private final UserRepository userRepository;
 
     /**
-     * Creates a new UserService with the given repository.
+     * Creates a new UserService using the specified repository.
      *
      * @param userRepository repository used for user persistence
      */
@@ -31,6 +38,14 @@ public class UserService {
 
     /**
      * Registers a new standard (non-admin) user.
+     * <p>
+     * Validation rules:
+     * <ul>
+     *     <li>Username must be unique</li>
+     *     <li>A sequential userId is generated automatically</li>
+     *     <li>New users are non-admin by default</li>
+     * </ul>
+     * The user list is persisted immediately after registration.
      *
      * @param users    current list of all users
      * @param name     full name of the new user
@@ -71,12 +86,14 @@ public class UserService {
     // ---------------------------------------------------------
 
     /**
-     * Authenticates a user based on username and password.
+     * Attempts to authenticate a user based on provided login credentials.
+     * <p>
+     * This method delegates password checking to {@link User#authenticate(String, String)}.
      *
      * @param users    list of all registered users
      * @param username input username
      * @param password input password
-     * @return the authenticated {@link User}, or {@code null} if invalid credentials
+     * @return the authenticated {@link User}, or {@code null} if credentials are invalid
      */
     public User authenticateUser(List<User> users, String username, String password) {
         for (User u : users) {
@@ -92,18 +109,18 @@ public class UserService {
     // ---------------------------------------------------------
 
     /**
-     * Saves the list of users to persistent storage.
+     * Saves the list of users to persistent storage using the repository.
      *
-     * @param users users to save
+     * @param users list of users to save
      */
     public void saveUsers(List<User> users) {
         userRepository.saveUsers(users);
     }
 
     /**
-     * Loads all users from persistent storage.
+     * Loads all users from storage.
      *
-     * @return list of users, or an empty list if none exist
+     * @return list of restored users, or an empty list if none exist
      */
     public List<User> loadUsers() {
         return userRepository.loadUsers();
