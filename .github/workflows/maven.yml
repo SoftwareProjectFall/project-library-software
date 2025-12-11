@@ -6,6 +6,7 @@ on:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:   # <-- هذا الذي يضيف زر Run
 
 jobs:
   build:
@@ -13,16 +14,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          # Shallow clone must be disabled for better analysis
           fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: 17
           distribution: 'zulu'
 
       - name: Cache SonarCloud packages
